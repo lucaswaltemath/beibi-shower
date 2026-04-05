@@ -82,14 +82,18 @@
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
   }
   .header .logo {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 12px;
+    max-width: 260px;
+    height: auto;
+    margin: 4px auto 8px;
     display: block;
-    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
-    border-radius: 50%;
-    object-fit: cover;
-    background: rgba(255,255,255,0.15);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) brightness(0) invert(1);
+  }
+  .header .baby-name-title {
+    font-size: 20px;
+    font-weight: 600;
+    opacity: 0.9;
+    position: relative;
+    letter-spacing: -0.3px;
   }
   .header h1 {
     font-size: 28px;
@@ -652,9 +656,9 @@ function render() {
 
   app.innerHTML = `
     <div class="header">
-      <img class="logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-      <span class="baby-icon" style="display:none">${appSettings.babyEmoji || '\u{1F476}'}</span>
-      <h1>Beibi Shower de ${esc(appSettings.babyName)}</h1>
+      <span class="baby-icon">${appSettings.babyEmoji || '\u{1F476}'}</span>
+      <img class="logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
+      <h1 class="baby-name-title">de ${esc(appSettings.babyName)}</h1>
       <div class="baby-name">Lista de regalos</div>
     </div>
     ${currentView === 'guest' && total > 0 ? `
