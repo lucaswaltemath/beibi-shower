@@ -573,7 +573,6 @@ const FIREBASE_CONFIG = {
   appId: "1:518768252435:web:686fb6db0d19ce500bd1e6"
 };
 
-const ADMIN_PIN = "1234";
 // ============================================================
 
 // --- BABY EMOJI OPTIONS ---
@@ -591,6 +590,7 @@ const DEFAULT_SETTINGS = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const dbGifts = firebase.database().ref("gifts");
 const dbSettings = firebase.database().ref("settings");
+const dbAdmin = firebase.database().ref("admin");
 
 let gifts = {};
 let appSettings = { ...DEFAULT_SETTINGS };
@@ -600,6 +600,12 @@ let notifTimer = null;
 let dataLoaded = false;
 
 // --- HELPERS ---
+async function hashPin(pin) {
+  const data = new TextEncoder().encode(pin);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const $ = sel => document.querySelector(sel);
 const formatPrice = p => Number(p).toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
@@ -802,6 +808,14 @@ function renderAdmin() {
           </div>
         </div>
       </div>
+      <div class="setting-group">
+        <div class="setting-label">PIN de admin</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="s-new-pin" type="password" placeholder="Nuevo PIN" maxlength="6" style="flex:1">
+          <input class="input" id="s-new-pin-confirm" type="password" placeholder="Confirmar" maxlength="6" style="flex:1">
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="changePin()">Cambiar</button>
+        </div>
+      </div>
     </div>
 
     <div class="admin-form">
@@ -853,19 +867,57 @@ function renderAdmin() {
 function switchView(v) { currentView = v; render(); }
 
 function showPinModal() {
-  showModal(`
-    <h3>\u{1F512} Ingresa el PIN</h3>
-    <input class="input pin-input" id="pin" type="password" maxlength="4" placeholder="\u2022\u2022\u2022\u2022" autofocus
-      onkeydown="if(event.key==='Enter')checkPin()">
-    <div id="pin-error"></div>
-    <button class="btn btn-primary" onclick="checkPin()">Entrar</button>
-  `);
-  setTimeout(() => { const el = document.getElementById("pin"); if (el) el.focus(); }, 100);
+  dbAdmin.child("pinHash").once("value", snap => {
+    const hasPin = snap.exists();
+    if (!hasPin) {
+      showModal(`
+        <h3>\u{1F512} Crear PIN de admin</h3>
+        <p class="sub">Es tu primera vez. Crea un PIN para proteger el panel de admin.</p>
+        <input class="input pin-input" id="pin" type="password" maxlength="6" placeholder="\u2022\u2022\u2022\u2022" autofocus
+          onkeydown="if(event.key==='Enter')document.getElementById('pin-confirm').focus()">
+        <input class="input pin-input" id="pin-confirm" type="password" maxlength="6" placeholder="Confirmar PIN" style="margin-top:12px"
+          onkeydown="if(event.key==='Enter')createPin()">
+        <div id="pin-error"></div>
+        <button class="btn btn-primary" onclick="createPin()">Crear PIN</button>
+      `);
+    } else {
+      showModal(`
+        <h3>\u{1F512} Ingresa el PIN</h3>
+        <input class="input pin-input" id="pin" type="password" maxlength="6" placeholder="\u2022\u2022\u2022\u2022" autofocus
+          onkeydown="if(event.key==='Enter')checkPin()">
+        <div id="pin-error"></div>
+        <button class="btn btn-primary" onclick="checkPin()">Entrar</button>
+      `);
+    }
+    setTimeout(() => { const el = document.getElementById("pin"); if (el) el.focus(); }, 100);
+  });
 }
 
-function checkPin() {
+async function createPin() {
   const pin = document.getElementById("pin").value;
-  if (pin === ADMIN_PIN) {
+  const confirm = document.getElementById("pin-confirm").value;
+  if (!pin || pin.length < 4) {
+    document.getElementById("pin-error").innerHTML = '<p class="error">El PIN debe tener al menos 4 digitos</p>';
+    return;
+  }
+  if (pin !== confirm) {
+    document.getElementById("pin-error").innerHTML = '<p class="error">Los PINs no coinciden</p>';
+    return;
+  }
+  const hashed = await hashPin(pin);
+  await dbAdmin.set({ pinHash: hashed });
+  currentView = "admin";
+  closeModal();
+  render();
+  notify("PIN creado. No lo olvides!");
+}
+
+async function checkPin() {
+  const pin = document.getElementById("pin").value;
+  if (!pin) return;
+  const hashed = await hashPin(pin);
+  const snap = await dbAdmin.child("pinHash").once("value");
+  if (snap.val() === hashed) {
     currentView = "admin";
     closeModal();
     render();
@@ -1004,6 +1056,18 @@ function applyHexColor() {
   applyTheme(hex);
   dbSettings.update({ customColor: hex });
   notify("Color actualizado");
+}
+
+async function changePin() {
+  const pin = document.getElementById("s-new-pin").value;
+  const confirm = document.getElementById("s-new-pin-confirm").value;
+  if (!pin || pin.length < 4) return notify("El PIN debe tener al menos 4 digitos", "error");
+  if (pin !== confirm) return notify("Los PINs no coinciden", "error");
+  const hashed = await hashPin(pin);
+  await dbAdmin.set({ pinHash: hashed });
+  document.getElementById("s-new-pin").value = '';
+  document.getElementById("s-new-pin-confirm").value = '';
+  notify("PIN actualizado");
 }
 
 // --- MODAL UTILS ---
