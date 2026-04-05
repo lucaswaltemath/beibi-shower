@@ -3,85 +3,454 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Baby Shower — Lista de Regalos</title>
+<title>Beibi Shower — Lista de Regalos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --primary: #7c6ca8;
+    --primary-light: #ede8f5;
+    --primary-dark: #5a4d80;
+    --accent: #f5a623;
+    --bg: #f8f6fc;
+    --card-bg: #ffffff;
+    --text: #2d2640;
+    --text-secondary: #8a829d;
+    --border: #e8e4f0;
+    --danger: #e74c3c;
+    --success: #27ae60;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.05);
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: #FAFAFA; color: #1a1a1a; min-height: 100vh; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
 
   /* HEADER */
-  .header { padding: 32px 20px 20px; text-align: center; border-bottom: 1px solid #eee; background: #fff; }
-  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
-  .header p { font-size: 14px; color: #888; margin-top: 6px; }
+  .header {
+    padding: 40px 20px 28px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60%;
+    left: -20%;
+    width: 140%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header .baby-icon {
+    font-size: 42px;
+    margin-bottom: 8px;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    position: relative;
+  }
+  .header .baby-name {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-top: 6px;
+    font-weight: 500;
+    position: relative;
+  }
+  .header p {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-top: 4px;
+    position: relative;
+  }
 
   /* NAV */
-  .nav { display: flex; justify-content: center; gap: 8px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #eee; }
-  .nav button { padding: 8px 20px; border-radius: 24px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; background: #f0f0f0; color: #666; }
-  .nav button.active { background: #1a1a1a; color: #fff; }
+  .nav {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 20px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+  .nav button {
+    padding: 9px 22px;
+    border-radius: var(--radius-xl);
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-family: inherit;
+  }
+  .nav button:hover { background: var(--primary); color: #fff; }
+  .nav button.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(124,108,168,0.3);
+  }
 
   /* GRID */
-  .section-title { font-size: 13px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin: 24px 20px 8px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 20px; }
-  .card { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee; position: relative; transition: opacity 0.3s; }
-  .card.reserved { opacity: 0.55; }
-  .card img { width: 100%; height: 200px; object-fit: cover; background: #f5f5f5; display: block; }
-  .card .placeholder { width: 100%; height: 200px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #ccc; }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 28px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 18px;
+    padding: 8px 20px 20px;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .card:not(.reserved):hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+  .card.reserved { opacity: 0.6; }
+  .card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: var(--primary-light);
+    display: block;
+  }
+  .card .placeholder {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, var(--primary-light), #f0ecf8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
   .card-body { padding: 16px; }
-  .card-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-  .card-price { font-size: 18px; font-weight: 700; margin: 8px 0; }
-  .card .badge { position: absolute; top: 12px; right: 12px; background: #1a1a1a; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .card .reserved-by { font-size: 12px; color: #888; margin-top: 4px; }
-  .card-actions { display: flex; gap: 8px; }
+  .card-name { font-size: 16px; font-weight: 600; margin-bottom: 2px; color: var(--text); }
+  .card-price {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 8px 0;
+    color: var(--primary);
+  }
+  .card .badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--primary);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: var(--radius-xl);
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .card .reserved-by {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-style: italic;
+  }
+  .card-actions { display: flex; gap: 8px; margin-top: 4px; }
 
   /* BUTTONS */
-  .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; transition: opacity 0.2s; }
-  .btn-primary { background: #1a1a1a; color: #fff; }
-  .btn-secondary { background: #f0f0f0; color: #333; }
-  .btn-danger { background: #ffebee; color: #c62828; }
+  .btn {
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(124,108,168,0.25);
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-secondary { background: var(--primary-light); color: var(--primary); }
+  .btn-secondary:hover { background: #ddd5ee; }
+  .btn-danger { background: #fdecea; color: var(--danger); }
+  .btn-danger:hover { background: #f9d5d0; }
   .btn-warn { background: #fff3e0; color: #e65100; }
-  .btn-sm { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; width: auto; }
+  .btn-warn:hover { background: #ffe0b2; }
+  .btn-sm { padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; width: auto; }
   .btn:disabled { opacity: 0.4; cursor: default; }
-  .btn-link { color: #0066cc; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: 600; padding: 0; text-decoration: none; text-align: center; white-space: nowrap; }
+  .btn-link {
+    color: var(--primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0;
+    text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+  }
 
   /* FORMS */
-  .input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; outline: none; font-family: inherit; transition: border 0.2s; }
-  .input:focus { border-color: #1a1a1a; }
-  .admin-form { background: #fff; margin: 20px; border-radius: 12px; padding: 20px; border: 1px solid #eee; }
-  .admin-form h3 { margin-bottom: 16px; font-size: 16px; }
+  .input {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    background: var(--card-bg);
+    color: var(--text);
+  }
+  .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,108,168,0.12); }
+  .input::placeholder { color: var(--text-secondary); }
+
+  .admin-form {
+    background: var(--card-bg);
+    margin: 20px;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .admin-form h3 { margin-bottom: 16px; font-size: 16px; color: var(--text); }
   .form-grid { display: flex; flex-direction: column; gap: 12px; }
-  .admin-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .input { flex: 1; }
+
+  .admin-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-row:last-child { border-bottom: none; }
   .admin-row .info { flex: 1; min-width: 0; }
   .admin-row .info p:first-child { font-weight: 600; font-size: 14px; }
-  .admin-row .info p:last-child { font-size: 13px; color: #888; margin-top: 2px; }
-  .admin-row .info .reserved-link { margin-left: 8px; color: #0066cc; }
+  .admin-row .info p:last-child { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .admin-row .info .reserved-link { margin-left: 8px; color: var(--primary); font-weight: 600; }
   .admin-list { padding: 0 20px 40px; }
 
+  /* SETTINGS */
+  .settings-section {
+    background: var(--card-bg);
+    margin: 20px;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .settings-section h3 {
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .setting-group { margin-bottom: 20px; }
+  .setting-group:last-child { margin-bottom: 0; }
+  .setting-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .color-themes {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .color-swatch {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  .color-swatch:hover { transform: scale(1.1); }
+  .color-swatch.active {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--text);
+  }
+  .color-swatch.active::after {
+    content: '\\2713';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
   /* MODAL */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
-  .modal { background: #fff; border-radius: 16px; padding: 28px; max-width: 380px; width: 100%; }
-  .modal h3 { margin-bottom: 16px; font-size: 18px; }
-  .modal .sub { color: #888; font-size: 14px; margin: -12px 0 20px; }
-  .modal .error { color: #ff4444; font-size: 12px; margin-top: 8px; }
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+    animation: fadeOverlay 0.2s ease;
+  }
+  @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .modal h3 { margin-bottom: 16px; font-size: 18px; color: var(--text); }
+  .modal .sub { color: var(--text-secondary); font-size: 14px; margin: -12px 0 20px; }
+  .modal .error { color: var(--danger); font-size: 12px; margin-top: 8px; }
   .modal .btn { margin-top: 16px; }
   .modal .btn-row { display: flex; gap: 8px; margin-top: 16px; }
   .modal .btn-row .btn { margin-top: 0; }
 
   /* PIN */
   .pin-input { text-align: center; font-size: 24px; letter-spacing: 8px; }
-  .pin-input.error { border-color: #ff4444; }
+  .pin-input.error { border-color: var(--danger); }
 
   /* NOTIFICATION */
-  .notif { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #1a1a1a; color: #fff; padding: 10px 24px; border-radius: 24px; font-size: 13px; font-weight: 600; animation: fadeIn 0.3s ease; }
-  .notif.error { background: #ff4444; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  .notif {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: var(--primary);
+    color: #fff;
+    padding: 12px 28px;
+    border-radius: var(--radius-xl);
+    font-size: 13px;
+    font-weight: 600;
+    animation: notifIn 0.35s ease;
+    box-shadow: var(--shadow-md);
+  }
+  .notif.error { background: var(--danger); }
+  @keyframes notifIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-15px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
 
-  .empty { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
   .loading { display: flex; gap: 6px; justify-content: center; padding: 80px 0; }
-  .loading .dot { width: 10px; height: 10px; border-radius: 50%; background: #a0a0a0; animation: pulse 1.2s ease-in-out infinite; }
+  .loading .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
   .loading .dot:nth-child(2) { animation-delay: 0.2s; }
   .loading .dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes pulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+  @keyframes pulse {
+    0%,80%,100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 24px 20px 32px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.6;
+  }
+
+  /* COUNTER STATS */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 16px 20px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-top: 2px;
+  }
 </style>
 </head>
 <body>
@@ -96,7 +465,7 @@
 
 <script>
 // ============================================================
-// 🔧 CONFIGURACIÓN — Reemplaza con tus datos de Firebase
+// CONFIGURACION — Reemplaza con tus datos de Firebase
 // ============================================================
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAkOS71G8PvL9xzERJ3DtW8ohBVy5WIXmk",
@@ -108,18 +477,34 @@ const FIREBASE_CONFIG = {
   appId: "1:518768252435:web:686fb6db0d19ce500bd1e6"
 };
 
-const ADMIN_PIN = "1234"; // Cambia esto por tu PIN secreto
-const PAGE_TITLE = "Baby Shower";
-const PAGE_SUBTITLE = "Lista de Regalos";
+const ADMIN_PIN = "1234";
 // ============================================================
 
+// --- COLOR THEMES ---
+const THEMES = {
+  lavanda: { primary: '#7c6ca8', primaryLight: '#ede8f5', primaryDark: '#5a4d80', bg: '#f8f6fc', border: '#e8e4f0', label: 'Lavanda' },
+  celeste: { primary: '#5b9bd5', primaryLight: '#e3f0fb', primaryDark: '#3a7bba', bg: '#f4f9fd', border: '#d5e6f5', label: 'Celeste' },
+  rosa: { primary: '#d4789c', primaryLight: '#fce8f0', primaryDark: '#b85a80', bg: '#fdf5f8', border: '#f0d8e3', label: 'Rosa' },
+  verde: { primary: '#6aab73', primaryLight: '#e6f4e8', primaryDark: '#4d8a56', bg: '#f4faf5', border: '#d2e8d6', label: 'Verde' },
+  durazno: { primary: '#d4956b', primaryLight: '#fdf0e6', primaryDark: '#b87a52', bg: '#fdf8f4', border: '#f0dece', label: 'Durazno' },
+  gris: { primary: '#6b7b8d', primaryLight: '#e8ecf0', primaryDark: '#4d5d6d', bg: '#f5f7f9', border: '#dde2e8', label: 'Gris' },
+};
+
+const DEFAULT_SETTINGS = {
+  babyName: 'Kai',
+  theme: 'lavanda',
+};
+
 firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.database().ref("gifts");
+const dbGifts = firebase.database().ref("gifts");
+const dbSettings = firebase.database().ref("settings");
 
 let gifts = {};
+let appSettings = { ...DEFAULT_SETTINGS };
 let currentView = "guest";
 let editingId = null;
 let notifTimer = null;
+let dataLoaded = false;
 
 // --- HELPERS ---
 const $ = sel => document.querySelector(sel);
@@ -127,6 +512,16 @@ const formatPrice = p => Number(p).toLocaleString("es-CL", { style: "currency", 
 const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
 const available = () => giftList().filter(g => !g.reservedBy);
 const reserved = () => giftList().filter(g => g.reservedBy);
+
+function applyTheme(themeKey) {
+  const t = THEMES[themeKey] || THEMES.lavanda;
+  const root = document.documentElement.style;
+  root.setProperty('--primary', t.primary);
+  root.setProperty('--primary-light', t.primaryLight);
+  root.setProperty('--primary-dark', t.primaryDark);
+  root.setProperty('--bg', t.bg);
+  root.setProperty('--border', t.border);
+}
 
 function notify(msg, type = "success") {
   clearTimeout(notifTimer);
@@ -138,38 +533,70 @@ function notify(msg, type = "success") {
   notifTimer = setTimeout(() => el.style.display = "none", 2500);
 }
 
-// --- FIREBASE LISTENER ---
-db.on("value", snap => {
+// --- FIREBASE LISTENERS ---
+dbGifts.on("value", snap => {
   gifts = snap.val() || {};
+  if (dataLoaded) render();
+});
+
+dbSettings.on("value", snap => {
+  const s = snap.val();
+  if (s) {
+    appSettings = { ...DEFAULT_SETTINGS, ...s };
+  }
+  applyTheme(appSettings.theme);
+  dataLoaded = true;
   render();
 });
 
 // --- RENDER ---
 function render() {
   const app = $("#app");
+  const av = available();
+  const res = reserved();
+  const total = giftList().length;
+
   app.innerHTML = `
     <div class="header">
-      <h1>${PAGE_TITLE}</h1>
-      <p>${PAGE_SUBTITLE}</p>
+      <span class="baby-icon">\u{1F476}</span>
+      <h1>Beibi Shower</h1>
+      <div class="baby-name">Lista de regalos para ${esc(appSettings.babyName)}</div>
     </div>
+    ${currentView === 'guest' && total > 0 ? `
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-number">${av.length}</div>
+        <div class="stat-label">Disponibles</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">${res.length}</div>
+        <div class="stat-label">Reservados</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">${total}</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+    ` : ''}
     <div class="nav">
       <button class="${currentView === 'guest' ? 'active' : ''}" onclick="switchView('guest')">
-        Regalos ${available().length > 0 ? '(' + available().length + ')' : ''}
+        \u{1F381} Regalos
       </button>
       <button class="${currentView === 'admin' ? 'active' : ''}" onclick="${currentView === 'admin' ? '' : 'showPinModal()'}">
-        Admin
+        \u{1F512} Admin
       </button>
     </div>
     <div id="content">
       ${currentView === "guest" ? renderGuest() : renderAdmin()}
     </div>
+    <div class="footer">Hecho con \u2764\uFE0F para ${esc(appSettings.babyName)}</div>
   `;
 }
 
 function renderGuest() {
   const av = available();
   const res = reserved();
-  if (giftList().length === 0) return '<div class="empty">Aún no hay regalos en la lista</div>';
+  if (giftList().length === 0) return '<div class="empty">\u{1F381} Aun no hay regalos en la lista</div>';
 
   let html = "";
   if (av.length > 0) {
@@ -178,13 +605,13 @@ function renderGuest() {
       html += `
         <div class="card">
           ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-          <div class="placeholder" style="${g.image ? 'display:none' : ''}">🎁</div>
+          <div class="placeholder" style="${g.image ? 'display:none' : ''}">\u{1F381}</div>
           <div class="card-body">
             <p class="card-name">${esc(g.name)}</p>
             <p class="card-price">${formatPrice(g.price)}</p>
             <div class="card-actions">
-              <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo</button>
-              ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver ↗</a>` : ''}
+              <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo \u{1F64B}</button>
+              ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver \u2197</a>` : ''}
             </div>
           </div>
         </div>`;
@@ -196,9 +623,9 @@ function renderGuest() {
     res.forEach(g => {
       html += `
         <div class="card reserved">
-          <div class="badge">Reservado</div>
+          <div class="badge">\u2713 Reservado</div>
           ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
-          <div class="placeholder" style="${g.image ? 'display:none' : ''}">🎁</div>
+          <div class="placeholder" style="${g.image ? 'display:none' : ''}">\u{1F381}</div>
           <div class="card-body">
             <p class="card-name">${esc(g.name)}</p>
             <p class="card-price">${formatPrice(g.price)}</p>
@@ -216,8 +643,30 @@ function renderAdmin() {
   const editing = editingId ? gifts[editingId] : null;
 
   let html = `
+    <div class="settings-section">
+      <h3>\u2699\uFE0F Personalizar</h3>
+      <div class="setting-group">
+        <div class="setting-label">Nombre del bebe</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="s-baby-name" placeholder="Nombre" value="${esc(appSettings.babyName)}">
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="saveBabyName()">Guardar</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">Color del tema</div>
+        <div class="color-themes">
+          ${Object.entries(THEMES).map(([key, t]) => `
+            <div class="color-swatch ${appSettings.theme === key ? 'active' : ''}"
+                 style="background: ${t.primary}"
+                 onclick="saveTheme('${key}')"
+                 title="${t.label}"></div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
     <div class="admin-form">
-      <h3>${editing ? 'Editar regalo' : 'Agregar regalo'}</h3>
+      <h3>${editing ? '\u270F\uFE0F Editar regalo' : '\u2795 Agregar regalo'}</h3>
       <div class="form-grid">
         <input class="input" id="f-name" placeholder="Nombre del regalo *" value="${editing ? esc(editing.name) : ''}">
         <input class="input" id="f-image" placeholder="URL de la imagen" value="${editing ? esc(editing.image || '') : ''}">
@@ -243,11 +692,11 @@ function renderAdmin() {
         <div class="admin-row">
           <div class="info">
             <p>${esc(g.name)}</p>
-            <p>${formatPrice(g.price)}${g.reservedBy ? `<span class="reserved-link">→ ${esc(g.reservedBy)}</span>` : ''}</p>
+            <p>${formatPrice(g.price)}${g.reservedBy ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}</span>` : ''}</p>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
           ${g.reservedBy ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">✕</button>
+          <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">\u2715</button>
         </div>`;
     });
   }
@@ -260,8 +709,8 @@ function switchView(v) { currentView = v; render(); }
 
 function showPinModal() {
   showModal(`
-    <h3>Ingresa el PIN</h3>
-    <input class="input pin-input" id="pin" type="password" maxlength="4" placeholder="••••" autofocus
+    <h3>\u{1F512} Ingresa el PIN</h3>
+    <input class="input pin-input" id="pin" type="password" maxlength="4" placeholder="\u2022\u2022\u2022\u2022" autofocus
       onkeydown="if(event.key==='Enter')checkPin()">
     <div id="pin-error"></div>
     <button class="btn btn-primary" onclick="checkPin()">Entrar</button>
@@ -286,17 +735,17 @@ function saveGift() {
   const image = $("#f-image").value.trim();
   const link = $("#f-link").value.trim();
   const price = $("#f-price").value;
-  if (!name || !price) return;
+  if (!name || !price) return notify("Completa nombre y precio", "error");
 
   const data = { name, image, link, price: Number(price), reservedBy: null };
 
   if (editingId) {
     data.reservedBy = gifts[editingId].reservedBy || null;
-    db.child(editingId).set(data);
+    dbGifts.child(editingId).set(data);
     editingId = null;
     notify("Regalo actualizado");
   } else {
-    db.push(data);
+    dbGifts.push(data);
     notify("Regalo agregado");
   }
 }
@@ -312,40 +761,58 @@ function cancelEdit() { editingId = null; render(); }
 function showDeleteModal(id) {
   const g = gifts[id];
   showModal(`
-    <h3>Eliminar regalo</h3>
-    <p class="sub">¿Seguro que quieres eliminar "${esc(g.name)}"?</p>
+    <h3>\u26A0\uFE0F Eliminar regalo</h3>
+    <p class="sub">\u00BFSeguro que quieres eliminar "${esc(g.name)}"?</p>
     <div class="btn-row">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" style="flex:1;background:#ff4444" onclick="deleteGift('${id}')">Eliminar</button>
+      <button class="btn btn-primary" style="flex:1;background:var(--danger)" onclick="deleteGift('${id}')">Eliminar</button>
     </div>
   `);
 }
 
-function deleteGift(id) { db.child(id).remove(); closeModal(); notify("Regalo eliminado"); }
+function deleteGift(id) { dbGifts.child(id).remove(); closeModal(); notify("Regalo eliminado"); }
 
 function showReserveModal(id) {
   const g = gifts[id];
   showModal(`
-    <h3>Reservar regalo</h3>
-    <p class="sub">${esc(g.name)} — ${formatPrice(g.price)}</p>
-    <input class="input" id="guest-name" placeholder="Tu nombre" autofocus
-      onkeydown="if(event.key==='Enter')reserveGift('${id}')">
-    <button class="btn btn-primary" onclick="reserveGift('${id}')">Confirmar</button>
+    <h3>\u{1F381} Reservar regalo</h3>
+    <p class="sub">${esc(g.name)} \u2014 ${formatPrice(g.price)}</p>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input class="input" id="guest-name" placeholder="Tu nombre *" autofocus
+        onkeydown="if(event.key==='Enter')document.getElementById('guest-lastname').focus()">
+      <input class="input" id="guest-lastname" placeholder="Tu apellido *"
+        onkeydown="if(event.key==='Enter')reserveGift('${id}')">
+    </div>
+    <button class="btn btn-primary" onclick="reserveGift('${id}')">Confirmar reserva</button>
   `);
   setTimeout(() => { const el = document.getElementById("guest-name"); if (el) el.focus(); }, 100);
 }
 
 function reserveGift(id) {
   const name = document.getElementById("guest-name").value.trim();
-  if (!name) return;
-  db.child(id).update({ reservedBy: name });
+  const lastname = document.getElementById("guest-lastname").value.trim();
+  if (!name || !lastname) return notify("Ingresa tu nombre y apellido", "error");
+  dbGifts.child(id).update({ reservedBy: name + " " + lastname });
   closeModal();
-  notify("Regalo reservado con tu nombre");
+  notify("Regalo reservado a tu nombre");
 }
 
 function unreserve(id) {
-  db.child(id).update({ reservedBy: null });
+  dbGifts.child(id).update({ reservedBy: null });
   notify("Reserva cancelada");
+}
+
+// --- SETTINGS ---
+function saveBabyName() {
+  const name = document.getElementById("s-baby-name").value.trim();
+  if (!name) return notify("Ingresa un nombre", "error");
+  dbSettings.update({ babyName: name });
+  notify("Nombre actualizado");
+}
+
+function saveTheme(themeKey) {
+  dbSettings.update({ theme: themeKey });
+  notify("Tema actualizado");
 }
 
 // --- MODAL UTILS ---
