@@ -469,6 +469,33 @@
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
   }
 
+  /* INSTRUCTIONS */
+  .instructions {
+    background: var(--card-bg);
+    margin: 20px 20px 0;
+    padding: 20px 24px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .instructions-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .instructions ol {
+    padding-left: 20px;
+    margin-bottom: 10px;
+  }
+  .instructions li { margin-bottom: 4px; }
+  .instructions-note {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
   .empty {
     text-align: center;
     padding: 60px 20px;
@@ -697,7 +724,17 @@ function renderGuest() {
   const res = reserved();
   if (giftList().length === 0) return '<div class="empty">\u{1F381} Aun no hay regalos en la lista</div>';
 
-  let html = "";
+  let html = `
+    <div class="instructions">
+      <p class="instructions-title">\u{1F44B} \u00BFComo funciona?</p>
+      <ol>
+        <li>Elige un regalo de la lista que te gustaria llevar</li>
+        <li>Presiona <strong>"Lo llevo yo"</strong> e ingresa tu nombre y apellido</li>
+        <li>El regalo quedara reservado a tu nombre para que nadie mas lo repita</li>
+      </ol>
+      <p class="instructions-note">Los regalos marcados con <strong>\u221E</strong> pueden ser llevados por varias personas.</p>
+    </div>
+  `;
   if (av.length > 0) {
     html += `<p class="section-title">Disponibles</p><div class="grid">`;
     av.forEach(g => {
