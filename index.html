@@ -19,6 +19,7 @@
     --border: #e8e4f0;
     --danger: #e74c3c;
     --success: #27ae60;
+    --gradient-opacity: 0.7;
     --radius-sm: 8px;
     --radius-md: 14px;
     --radius-lg: 20px;
@@ -35,7 +36,25 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    position: relative;
   }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(ellipse at 20% 20%, var(--primary-light) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, var(--primary-light) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.6) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.7;
+  }
+  body > * { position: relative; z-index: 1; }
+  #app { position: relative; z-index: 1; }
 
   /* HEADER */
   .header {
@@ -312,31 +331,71 @@
     gap: 10px;
     flex-wrap: wrap;
   }
-  .color-swatch {
-    width: 44px;
-    height: 44px;
+  .color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .color-picker-hex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 200px;
+  }
+  .color-preview {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    border: 3px solid transparent;
+    border: 2px solid var(--border);
     cursor: pointer;
-    transition: all 0.2s ease;
+    flex-shrink: 0;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
     position: relative;
   }
-  .color-swatch:hover { transform: scale(1.1); }
-  .color-swatch.active {
-    border-color: var(--text);
-    box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--text);
-  }
-  .color-swatch.active::after {
-    content: '\\2713';
+  .color-preview input[type="color"] {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    top: -8px;
+    left: -8px;
+    width: 56px;
+    height: 56px;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+  }
+  .hex-input {
+    width: 100px;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* EMOJI PICKER */
+  .emoji-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .emoji-option {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--border);
+    background: var(--card-bg);
+    cursor: pointer;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .emoji-option:hover { transform: scale(1.1); border-color: var(--primary); }
+  .emoji-option.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 0 0 2px var(--primary-light);
   }
 
   /* MODAL */
@@ -480,19 +539,16 @@ const FIREBASE_CONFIG = {
 const ADMIN_PIN = "1234";
 // ============================================================
 
-// --- COLOR THEMES ---
-const THEMES = {
-  lavanda: { primary: '#7c6ca8', primaryLight: '#ede8f5', primaryDark: '#5a4d80', bg: '#f8f6fc', border: '#e8e4f0', label: 'Lavanda' },
-  celeste: { primary: '#5b9bd5', primaryLight: '#e3f0fb', primaryDark: '#3a7bba', bg: '#f4f9fd', border: '#d5e6f5', label: 'Celeste' },
-  rosa: { primary: '#d4789c', primaryLight: '#fce8f0', primaryDark: '#b85a80', bg: '#fdf5f8', border: '#f0d8e3', label: 'Rosa' },
-  verde: { primary: '#6aab73', primaryLight: '#e6f4e8', primaryDark: '#4d8a56', bg: '#f4faf5', border: '#d2e8d6', label: 'Verde' },
-  durazno: { primary: '#d4956b', primaryLight: '#fdf0e6', primaryDark: '#b87a52', bg: '#fdf8f4', border: '#f0dece', label: 'Durazno' },
-  gris: { primary: '#6b7b8d', primaryLight: '#e8ecf0', primaryDark: '#4d5d6d', bg: '#f5f7f9', border: '#dde2e8', label: 'Gris' },
-};
+// --- BABY EMOJI OPTIONS ---
+const BABY_EMOJIS = [
+  '\u{1F476}', '\u{1F476}\u{1F3FB}', '\u{1F476}\u{1F3FC}', '\u{1F476}\u{1F3FD}', '\u{1F476}\u{1F3FE}', '\u{1F476}\u{1F3FF}',
+  '\u{1F47C}', '\u{1F37C}', '\u{1FA77}', '\u{2B50}', '\u{1F31F}', '\u{1F49B}'
+];
 
 const DEFAULT_SETTINGS = {
   babyName: 'Kai',
-  theme: 'lavanda',
+  customColor: '#7c6ca8',
+  babyEmoji: '\u{1F476}',
 };
 
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -510,17 +566,44 @@ let dataLoaded = false;
 const $ = sel => document.querySelector(sel);
 const formatPrice = p => Number(p).toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
-const available = () => giftList().filter(g => !g.reservedBy);
-const reserved = () => giftList().filter(g => g.reservedBy);
+const available = () => giftList().filter(g => !g.reservedBy || g.unlimited);
+const reserved = () => giftList().filter(g => g.reservedBy && !g.unlimited);
 
-function applyTheme(themeKey) {
-  const t = THEMES[themeKey] || THEMES.lavanda;
+function hexToHSL(hex) {
+  let r = parseInt(hex.slice(1,3),16)/255;
+  let g = parseInt(hex.slice(3,5),16)/255;
+  let b = parseInt(hex.slice(5,7),16)/255;
+  let max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    let d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d + 2)/6; break;
+      case b: h = ((r-g)/d + 4)/6; break;
+    }
+  }
+  return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1-l);
+  const f = n => { const k = (n + h/30) % 12; const c = l - a * Math.max(Math.min(k-3,9-k,1),-1); return Math.round(255*c).toString(16).padStart(2,'0'); };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function applyTheme(hex) {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) hex = '#7c6ca8';
+  const [h, s, l] = hexToHSL(hex);
   const root = document.documentElement.style;
-  root.setProperty('--primary', t.primary);
-  root.setProperty('--primary-light', t.primaryLight);
-  root.setProperty('--primary-dark', t.primaryDark);
-  root.setProperty('--bg', t.bg);
-  root.setProperty('--border', t.border);
+  root.setProperty('--primary', hex);
+  root.setProperty('--primary-light', hslToHex(h, Math.min(s, 30), 93));
+  root.setProperty('--primary-dark', hslToHex(h, s, Math.max(l - 15, 20)));
+  root.setProperty('--bg', hslToHex(h, Math.min(s, 20), 97));
+  root.setProperty('--border', hslToHex(h, Math.min(s, 25), 90));
 }
 
 function notify(msg, type = "success") {
@@ -544,7 +627,8 @@ dbSettings.on("value", snap => {
   if (s) {
     appSettings = { ...DEFAULT_SETTINGS, ...s };
   }
-  applyTheme(appSettings.theme);
+  applyTheme(appSettings.customColor);
+  document.title = `Beibi Shower de ${appSettings.babyName} \u2014 Lista de Regalos`;
   dataLoaded = true;
   render();
 });
@@ -558,9 +642,9 @@ function render() {
 
   app.innerHTML = `
     <div class="header">
-      <span class="baby-icon">\u{1F476}</span>
-      <h1>Beibi Shower</h1>
-      <div class="baby-name">Lista de regalos para ${esc(appSettings.babyName)}</div>
+      <span class="baby-icon">${appSettings.babyEmoji || '\u{1F476}'}</span>
+      <h1>Beibi Shower de ${esc(appSettings.babyName)}</h1>
+      <div class="baby-name">Lista de regalos</div>
     </div>
     ${currentView === 'guest' && total > 0 ? `
     <div class="stats">
@@ -602,13 +686,16 @@ function renderGuest() {
   if (av.length > 0) {
     html += `<p class="section-title">Disponibles</p><div class="grid">`;
     av.forEach(g => {
+      const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
       html += `
         <div class="card">
+          ${g.unlimited ? '<div class="badge" style="background:var(--success)">\u221E Ilimitado</div>' : ''}
           ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
           <div class="placeholder" style="${g.image ? 'display:none' : ''}">\u{1F381}</div>
           <div class="card-body">
             <p class="card-name">${esc(g.name)}</p>
             <p class="card-price">${formatPrice(g.price)}</p>
+            ${reservers.length > 0 ? `<p class="reserved-by">\u{1F64B} ${reservers.map(r => esc(r)).join(', ')}</p>` : ''}
             <div class="card-actions">
               <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo \u{1F64B}</button>
               ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver \u2197</a>` : ''}
@@ -653,14 +740,25 @@ function renderAdmin() {
         </div>
       </div>
       <div class="setting-group">
-        <div class="setting-label">Color del tema</div>
-        <div class="color-themes">
-          ${Object.entries(THEMES).map(([key, t]) => `
-            <div class="color-swatch ${appSettings.theme === key ? 'active' : ''}"
-                 style="background: ${t.primary}"
-                 onclick="saveTheme('${key}')"
-                 title="${t.label}"></div>
+        <div class="setting-label">Icono del bebe</div>
+        <div class="emoji-grid">
+          ${BABY_EMOJIS.map(e => `
+            <button class="emoji-option ${(appSettings.babyEmoji || '\u{1F476}') === e ? 'active' : ''}"
+                    onclick="saveEmoji('${e}')">${e}</button>
           `).join('')}
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">Color del tema</div>
+        <div class="color-picker-row">
+          <div class="color-picker-hex">
+            <div class="color-preview" style="background:${appSettings.customColor || '#7c6ca8'}">
+              <input type="color" id="s-color-native" value="${appSettings.customColor || '#7c6ca8'}" onchange="onColorPick(this.value)">
+            </div>
+            <input class="input hex-input" id="s-color-hex" placeholder="#7c6ca8" value="${appSettings.customColor || '#7c6ca8'}" maxlength="7"
+              onkeydown="if(event.key==='Enter')applyHexColor()">
+            <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="applyHexColor()">Aplicar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -672,6 +770,10 @@ function renderAdmin() {
         <input class="input" id="f-image" placeholder="URL de la imagen" value="${editing ? esc(editing.image || '') : ''}">
         <input class="input" id="f-link" placeholder="Link de compra" value="${editing ? esc(editing.link || '') : ''}">
         <input class="input" id="f-price" placeholder="Precio (CLP) *" type="number" value="${editing ? editing.price : ''}">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text-secondary)">
+          <input type="checkbox" id="f-unlimited" ${editing && editing.unlimited ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)">
+          Permite multiples reservas (ropa, calcetines, etc.)
+        </label>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary" onclick="saveGift()">
             ${editing ? 'Guardar cambios' : 'Agregar'}
@@ -688,14 +790,16 @@ function renderAdmin() {
     html += '<div class="empty">Agrega el primer regalo arriba</div>';
   } else {
     all.forEach(g => {
+      const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
+      const hasReservers = g.reservedBy || reservers.length > 0;
       html += `
         <div class="admin-row">
           <div class="info">
-            <p>${esc(g.name)}</p>
-            <p>${formatPrice(g.price)}${g.reservedBy ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}</span>` : ''}</p>
+            <p>${esc(g.name)}${g.unlimited ? ' <span style="font-size:11px;color:var(--success);font-weight:600">\u221E</span>' : ''}</p>
+            <p>${formatPrice(g.price)}${g.reservedBy && !g.unlimited ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}</span>` : ''}${reservers.length > 0 ? `<span class="reserved-link">\u2192 ${reservers.map(r => esc(r)).join(', ')}</span>` : ''}</p>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
-          ${g.reservedBy ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
+          ${hasReservers ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">\u2715</button>
         </div>`;
     });
@@ -735,12 +839,15 @@ function saveGift() {
   const image = $("#f-image").value.trim();
   const link = $("#f-link").value.trim();
   const price = $("#f-price").value;
+  const unlimited = $("#f-unlimited").checked;
   if (!name || !price) return notify("Completa nombre y precio", "error");
 
-  const data = { name, image, link, price: Number(price), reservedBy: null };
+  const data = { name, image, link, price: Number(price), unlimited, reservedBy: null };
 
   if (editingId) {
-    data.reservedBy = gifts[editingId].reservedBy || null;
+    const prev = gifts[editingId];
+    data.reservedBy = prev.reservedBy || null;
+    if (prev.reservedByList) data.reservedByList = prev.reservedByList;
     dbGifts.child(editingId).set(data);
     editingId = null;
     notify("Regalo actualizado");
@@ -792,13 +899,24 @@ function reserveGift(id) {
   const name = document.getElementById("guest-name").value.trim();
   const lastname = document.getElementById("guest-lastname").value.trim();
   if (!name || !lastname) return notify("Ingresa tu nombre y apellido", "error");
-  dbGifts.child(id).update({ reservedBy: name + " " + lastname });
+  const fullName = name + " " + lastname;
+  const gift = gifts[id];
+  if (gift && gift.unlimited) {
+    dbGifts.child(id).child("reservedByList").push(fullName);
+  } else {
+    dbGifts.child(id).update({ reservedBy: fullName });
+  }
   closeModal();
   notify("Regalo reservado a tu nombre");
 }
 
 function unreserve(id) {
-  dbGifts.child(id).update({ reservedBy: null });
+  const gift = gifts[id];
+  if (gift && gift.unlimited) {
+    dbGifts.child(id).child("reservedByList").remove();
+  } else {
+    dbGifts.child(id).update({ reservedBy: null });
+  }
   notify("Reserva cancelada");
 }
 
@@ -810,9 +928,28 @@ function saveBabyName() {
   notify("Nombre actualizado");
 }
 
-function saveTheme(themeKey) {
-  dbSettings.update({ theme: themeKey });
-  notify("Tema actualizado");
+function saveEmoji(emoji) {
+  dbSettings.update({ babyEmoji: emoji });
+  notify("Icono actualizado");
+}
+
+function onColorPick(hex) {
+  const hexInput = document.getElementById("s-color-hex");
+  if (hexInput) hexInput.value = hex;
+  applyTheme(hex);
+  dbSettings.update({ customColor: hex });
+  notify("Color actualizado");
+}
+
+function applyHexColor() {
+  let hex = document.getElementById("s-color-hex").value.trim();
+  if (!hex.startsWith('#')) hex = '#' + hex;
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return notify("Ingresa un color hex valido (ej: #7c6ca8)", "error");
+  const nativePicker = document.getElementById("s-color-native");
+  if (nativePicker) nativePicker.value = hex;
+  applyTheme(hex);
+  dbSettings.update({ customColor: hex });
+  notify("Color actualizado");
 }
 
 // --- MODAL UTILS ---
