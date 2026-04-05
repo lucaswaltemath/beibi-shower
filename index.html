@@ -499,40 +499,108 @@
     justify-content: center;
     padding: 40px 20px;
     text-align: center;
+    background: #fafafa;
   }
   .landing-logo {
-    max-width: 200px;
+    max-width: 180px;
     height: auto;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+    margin-bottom: 20px;
   }
   .landing-sub {
     font-size: 16px;
-    color: var(--text-secondary);
-    margin-bottom: 32px;
-    max-width: 340px;
-    line-height: 1.5;
+    color: #888;
+    margin-bottom: 36px;
+    max-width: 320px;
+    line-height: 1.6;
   }
   .landing-card {
-    background: var(--card-bg);
-    border-radius: var(--radius-lg);
-    padding: 32px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 36px 32px;
     width: 100%;
     max-width: 400px;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #eee;
   }
   .landing-card h3 {
     font-size: 18px;
-    margin-bottom: 20px;
-    color: var(--text);
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #1a1a1a;
+  }
+  .landing-card .input {
+    border-color: #ddd;
+    color: #1a1a1a;
+  }
+  .landing-card .input:focus {
+    border-color: #1a1a1a;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+  }
+  .landing-card .input::placeholder { color: #aaa; }
+  .landing-card .btn-primary {
+    background: #1a1a1a;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .landing-card .btn-primary:hover { background: #333; }
+  .landing-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 32px;
+    padding: 20px 28px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #eee;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .landing-stat { text-align: center; }
+  .landing-stat-number {
+    display: block;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1;
+  }
+  .landing-stat-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #aaa;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .landing-stat-divider {
+    width: 1px;
+    height: 32px;
+    background: #eee;
   }
   .landing-note {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: #aaa;
     margin-top: 24px;
-    max-width: 340px;
+    max-width: 320px;
     line-height: 1.5;
+  }
+  .landing-credit {
+    font-size: 12px;
+    color: #ccc;
+    margin-top: 16px;
+  }
+
+  /* LANDING ANIMATIONS */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: landingFadeIn 0.6s ease forwards;
+  }
+  .fade-in.d1 { animation-delay: 0.1s; }
+  .fade-in.d2 { animation-delay: 0.2s; }
+  .fade-in.d3 { animation-delay: 0.4s; }
+  .fade-in.d4 { animation-delay: 0.6s; }
+  @keyframes landingFadeIn {
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .empty {
@@ -775,13 +843,12 @@ if (sessionId) {
 // --- LANDING PAGE ---
 function renderLanding() {
   const app = $("#app");
-  applyTheme('#7c6ca8');
   document.title = 'Beibi Shower \u2014 Crea tu lista de regalos';
   app.innerHTML = `
     <div class="landing">
-      <img class="landing-logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
-      <p class="landing-sub">Crea una lista de regalos para tu baby shower en segundos</p>
-      <div class="landing-card">
+      <img class="landing-logo fade-in" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
+      <p class="landing-sub fade-in d1">Crea una lista de regalos para tu baby shower en segundos</p>
+      <div class="landing-card fade-in d2">
         <h3>\u{1F476} Crear nuevo Baby Shower</h3>
         <div class="form-grid">
           <input class="input" id="l-baby-name" placeholder="Nombre del bebe *" autofocus
@@ -789,9 +856,69 @@ function renderLanding() {
           <button class="btn btn-primary" onclick="createSession()">\u{1F389} Crear lista de regalos</button>
         </div>
       </div>
-      <p class="landing-note">Si ya tienes un link de baby shower, simplemente abrelo directamente.</p>
+      <div class="landing-stats fade-in d3" id="landing-stats">
+        <div class="landing-stat">
+          <span class="landing-stat-number" id="ls-sessions">-</span>
+          <span class="landing-stat-label">Baby Showers</span>
+        </div>
+        <div class="landing-stat-divider"></div>
+        <div class="landing-stat">
+          <span class="landing-stat-number" id="ls-gifts">-</span>
+          <span class="landing-stat-label">Regalos</span>
+        </div>
+        <div class="landing-stat-divider"></div>
+        <div class="landing-stat">
+          <span class="landing-stat-number" id="ls-money">-</span>
+          <span class="landing-stat-label">Planificados</span>
+        </div>
+      </div>
+      <p class="landing-note fade-in d3">Si ya tienes un link de baby shower, simplemente abrelo directamente.</p>
+      <p class="landing-credit fade-in d4">Hecho con \u2764\uFE0F para Kai</p>
     </div>
   `;
+  loadLandingStats();
+}
+
+function animateNumber(el, target, prefix) {
+  if (target === 0) { el.textContent = prefix ? prefix + '0' : '0'; return; }
+  const duration = 1200;
+  const start = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(target * eased);
+    el.textContent = prefix ? prefix + current.toLocaleString('es-CL') : current.toLocaleString('es-CL');
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+async function loadLandingStats() {
+  try {
+    const snap = await db.ref("sessions").once("value");
+    const sessions = snap.val();
+    if (!sessions) return;
+
+    let totalSessions = 0;
+    let totalGifts = 0;
+    let totalMoney = 0;
+
+    Object.values(sessions).forEach(session => {
+      totalSessions++;
+      if (session.gifts) {
+        Object.values(session.gifts).forEach(gift => {
+          totalGifts++;
+          totalMoney += Number(gift.price) || 0;
+        });
+      }
+    });
+
+    animateNumber(document.getElementById("ls-sessions"), totalSessions);
+    animateNumber(document.getElementById("ls-gifts"), totalGifts);
+    animateNumber(document.getElementById("ls-money"), totalMoney, '$');
+  } catch (e) {
+    console.log("No se pudieron cargar stats", e);
+  }
 }
 
 function slugify(text) {
