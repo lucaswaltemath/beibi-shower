@@ -1,20 +1,24 @@
-# 🎁 Baby Shower Registry
+# Beibi Shower
 
-Una app web minimalista para organizar la lista de regalos de un baby shower. Los invitados eligen y reservan regalos en tiempo real — sin regalos repetidos.
+Plataforma web para organizar listas de regalos de baby shower. Los invitados eligen y reservan regalos en tiempo real — sin regalos repetidos. Cualquier persona puede crear su propio baby shower en segundos.
 
-**[Ver demo live →](TU_URL_DE_VERCEL)**
+**[Ver app live → beibi-shower.vercel.app](https://beibi-shower.vercel.app)**
 
-![Baby Shower Registry Preview](preview.png)
+## Features
 
-## ✨ Features
-
-- **Vista invitados**: ven los regalos disponibles con foto, precio y link de compra. Reservan con un click.
+- **Multi-sesion**: cada baby shower tiene su propia URL (`?s=kai`, `?s=emma`, etc.)
+- **Landing page**: pagina de inicio para crear nuevos baby showers con stats globales en vivo
+- **Vista invitados**: regalos disponibles con foto, precio y link de compra. Reserva con nombre y apellido.
 - **Vista admin**: agrega, edita y elimina regalos. Libera reservas. Protegida con PIN.
-- **Tiempo real**: cuando alguien reserva, todos lo ven al instante (Firebase Realtime Database).
-- **Responsive**: funciona perfecto en celular, tablet y desktop.
+- **Regalos ilimitados**: opcion para regalos que pueden ser llevados por varias personas (ropa, calcetines, etc.)
+- **Personalizacion total**: nombre del bebe, color del tema (hex libre), emoji del bebe — todo desde el panel admin
+- **Tiempo real**: cuando alguien reserva, todos lo ven al instante (Firebase Realtime Database)
+- **PIN seguro**: hasheado con SHA-256 y guardado en Firebase, nunca en el codigo fuente
+- **Logo y favicon personalizados**
+- **Responsive**: funciona en celular, tablet y desktop
 - **Zero dependencies**: un solo archivo HTML. Sin frameworks, sin build, sin npm install.
 
-## 🚀 Setup (5 minutos)
+## Setup (5 minutos)
 
 ### 1. Crear proyecto en Firebase (gratis)
 
@@ -41,73 +45,82 @@ const FIREBASE_CONFIG = {
 };
 ```
 
-También cambia el PIN de admin:
-
-```javascript
-const ADMIN_PIN = "1234"; // Cámbialo por tu PIN secreto
-```
+El PIN de admin se configura la primera vez que accedes al panel de Admin desde la app (ya no se define en el codigo).
 
 ### 3. Deploy
 
-**Opción A — Vercel (recomendado)**
+**Opcion A — Vercel (recomendado)**
 
 1. Sube este repo a GitHub
 2. Ve a [vercel.com/new](https://vercel.com/new) e importa el repo
 3. Click en Deploy — listo
 
-**Opción B — Netlify**
+**Opcion B — Netlify**
 
 1. Ve a [app.netlify.com/drop](https://app.netlify.com/drop)
 2. Arrastra la carpeta con `index.html`
-3. Listo — te da una URL pública
+3. Listo — te da una URL publica
 
-**Opción C — Terminal**
+## Como usar
 
-```bash
-npx vercel
-```
+### Crear un baby shower
 
-## 📖 Cómo usar
+1. Entra a la app (sin parametros en la URL)
+2. Ingresa el nombre del bebe y presiona "Crear lista de regalos"
+3. Se genera una URL unica (ej: `?s=kai`) — compartela con los invitados
 
 ### Como organizador (admin)
 
-1. Abre la app y toca **Admin**
-2. Ingresa tu PIN
+1. Abre tu URL de baby shower
+2. Toca **Admin** e ingresa tu PIN (la primera vez te pedira crearlo)
 3. Agrega regalos con nombre, foto (URL), link de compra y precio
-4. Comparte el link con los invitados
+4. Marca regalos como "ilimitados" si pueden ser llevados por multiples personas
+5. Personaliza: cambia el nombre, color del tema, emoji del bebe
+6. Usa el boton "Copiar" en el link para compartir con invitados
 
 ### Como invitado
 
 1. Abre el link que te compartieron
-2. Elige un regalo disponible → toca **"Lo llevo yo"**
-3. Escribe tu nombre → confirmar
-4. El regalo queda reservado para ti
+2. Toca **?** en el header si necesitas instrucciones
+3. Elige un regalo disponible → toca **"Lo llevo yo"**
+4. Escribe tu nombre y apellido → confirmar
+5. El regalo queda reservado para ti
 
-## 🛠 Stack
+## Estructura en Firebase
+
+```
+/sessions/{session-id}/
+  /gifts/         → regalos de esa sesion
+  /settings/      → nombre, color, emoji
+  /admin/         → pinHash (SHA-256)
+```
+
+## Stack
 
 - HTML + CSS + Vanilla JS
 - Firebase Realtime Database
+- Web Crypto API (SHA-256 para PIN)
 - Cero dependencias de build
 
-## 📝 Personalización
+## Personalizacion
 
-Puedes cambiar el título y subtítulo editando estas variables en `index.html`:
+Desde el panel de Admin puedes cambiar:
 
-```javascript
-const PAGE_TITLE = "Baby Shower";
-const PAGE_SUBTITLE = "Lista de Regalos";
-```
+- **Nombre del bebe**: aparece en el header y titulo del browser
+- **Color del tema**: selector hex libre o color picker nativo
+- **Emoji del bebe**: 12 opciones con distintos tonos de piel y estilos
+- **PIN de admin**: cambialo cuando quieras
 
-Las imágenes de los regalos se agregan via URL — puedes usar links de la tienda o subir fotos a [imgur.com](https://imgur.com) o similar.
+Las imagenes de los regalos se agregan via URL — puedes usar links de la tienda o subir fotos a [imgur.com](https://imgur.com) o similar.
 
-## ⚠️ Nota sobre seguridad
+## Nota sobre seguridad
 
-El modo de prueba de Firebase expira en 30 días. Para uso extendido, actualiza las reglas en Firebase Console → Realtime Database → Rules:
+El modo de prueba de Firebase expira en 30 dias. Para uso extendido, actualiza las reglas en Firebase Console → Realtime Database → Rules:
 
 ```json
 {
   "rules": {
-    "gifts": {
+    "sessions": {
       ".read": true,
       ".write": true
     }
@@ -115,12 +128,10 @@ El modo de prueba de Firebase expira en 30 días. Para uso extendido, actualiza 
 }
 ```
 
-Esto mantiene la base de datos abierta solo para el nodo `gifts`.
+## Licencia
 
-## 📄 Licencia
-
-MIT — úsalo, modifícalo, compártelo.
+MIT — usalo, modificalo, compartelo.
 
 ---
 
-Hecho con ☕ por [Lucas Waltemath](https://linkedin.com/in/TU_LINKEDIN)
+Hecho con ❤️ por [Lucas Waltemath](https://www.linkedin.com/in/lucas-waltemath-292399104/) · [Instagram](https://www.instagram.com/lucas.waltemath)
