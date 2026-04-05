@@ -80,7 +80,7 @@
     height: auto;
     margin: 0 auto 16px;
     display: block;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15)) brightness(0) invert(1);
   }
   .header .baby-line {
     display: flex;
@@ -108,6 +108,30 @@
     font-weight: 400;
     position: relative;
     letter-spacing: 0.3px;
+  }
+  .header .help-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    z-index: 2;
+  }
+  .header .help-btn:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.8);
   }
 
   /* NAV */
@@ -466,37 +490,49 @@
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
   }
 
-  /* INSTRUCTIONS */
-  .instructions {
+  /* LANDING PAGE */
+  .landing {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .landing-logo {
+    max-width: 200px;
+    height: auto;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+  }
+  .landing-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 340px;
+    line-height: 1.5;
+  }
+  .landing-card {
     background: var(--card-bg);
-    margin: 0 20px;
-    padding: 22px 28px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    font-size: 14px;
+  }
+  .landing-card h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
     color: var(--text);
-    line-height: 1.7;
-    max-width: 640px;
-    margin-left: auto;
-    margin-right: auto;
   }
-  .instructions-title {
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 12px;
-  }
-  .instructions ol {
-    padding-left: 22px;
-    margin-bottom: 12px;
-  }
-  .instructions li { margin-bottom: 6px; }
-  .instructions-note {
+  .landing-note {
     font-size: 13px;
     color: var(--text-secondary);
-    border-top: 1px solid var(--border);
-    padding-top: 10px;
-    margin-top: 4px;
+    margin-top: 24px;
+    max-width: 340px;
+    line-height: 1.5;
   }
 
   .empty {
@@ -582,7 +618,6 @@ const FIREBASE_CONFIG = {
   appId: "1:518768252435:web:686fb6db0d19ce500bd1e6"
 };
 
-const ADMIN_PIN = "1234";
 // ============================================================
 
 // --- BABY EMOJI OPTIONS ---
@@ -592,14 +627,35 @@ const BABY_EMOJIS = [
 ];
 
 const DEFAULT_SETTINGS = {
-  babyName: 'Kai',
+  babyName: '',
   customColor: '#7c6ca8',
   babyEmoji: '\u{1F476}',
 };
 
 firebase.initializeApp(FIREBASE_CONFIG);
-const dbGifts = firebase.database().ref("gifts");
-const dbSettings = firebase.database().ref("settings");
+const db = firebase.database();
+
+// --- SESSION MANAGEMENT ---
+function getSessionId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('s');
+}
+
+let sessionId = getSessionId();
+let dbGifts = null;
+let dbSettings = null;
+let dbAdmin = null;
+
+function initSession(id) {
+  sessionId = id;
+  dbGifts = db.ref(`sessions/${id}/gifts`);
+  dbSettings = db.ref(`sessions/${id}/settings`);
+  dbAdmin = db.ref(`sessions/${id}/admin`);
+}
+
+if (sessionId) {
+  initSession(sessionId);
+}
 
 let gifts = {};
 let appSettings = { ...DEFAULT_SETTINGS };
@@ -609,6 +665,12 @@ let notifTimer = null;
 let dataLoaded = false;
 
 // --- HELPERS ---
+async function hashPin(pin) {
+  const data = new TextEncoder().encode(pin);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const $ = sel => document.querySelector(sel);
 const formatPrice = p => Number(p).toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
 const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
@@ -663,21 +725,105 @@ function notify(msg, type = "success") {
 }
 
 // --- FIREBASE LISTENERS ---
-dbGifts.on("value", snap => {
-  gifts = snap.val() || {};
-  if (dataLoaded) render();
-});
+function startListeners() {
+  dbGifts.on("value", snap => {
+    gifts = snap.val() || {};
+    if (dataLoaded) render();
+  });
 
-dbSettings.on("value", snap => {
-  const s = snap.val();
-  if (s) {
-    appSettings = { ...DEFAULT_SETTINGS, ...s };
+  dbSettings.on("value", snap => {
+    const s = snap.val();
+    if (s) {
+      appSettings = { ...DEFAULT_SETTINGS, ...s };
+    }
+    applyTheme(appSettings.customColor);
+    document.title = `Beibi Shower de ${appSettings.babyName} \u2014 Lista de Regalos`;
+    dataLoaded = true;
+    render();
+  });
+}
+
+// --- MIGRATE OLD DATA (one-time: root → /sessions/kai/) ---
+async function migrateIfNeeded() {
+  const oldGifts = await db.ref("gifts").once("value");
+  if (!oldGifts.exists()) return; // nothing to migrate
+
+  const alreadyMigrated = await db.ref("sessions/kai/settings").once("value");
+  if (alreadyMigrated.exists()) return; // already done
+
+  const oldSettings = await db.ref("settings").once("value");
+  const oldAdmin = await db.ref("admin").once("value");
+
+  const updates = {};
+  if (oldGifts.val()) updates["sessions/kai/gifts"] = oldGifts.val();
+  if (oldSettings.val()) updates["sessions/kai/settings"] = oldSettings.val();
+  else updates["sessions/kai/settings"] = { babyName: 'Kai', customColor: '#7c6ca8', babyEmoji: '\u{1F476}' };
+  if (oldAdmin.val()) updates["sessions/kai/admin"] = oldAdmin.val();
+
+  await db.ref().update(updates);
+  console.log("Datos de Kai migrados a /sessions/kai/");
+}
+
+migrateIfNeeded();
+
+if (sessionId) {
+  startListeners();
+} else {
+  renderLanding();
+}
+
+// --- LANDING PAGE ---
+function renderLanding() {
+  const app = $("#app");
+  applyTheme('#7c6ca8');
+  document.title = 'Beibi Shower \u2014 Crea tu lista de regalos';
+  app.innerHTML = `
+    <div class="landing">
+      <img class="landing-logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
+      <p class="landing-sub">Crea una lista de regalos para tu baby shower en segundos</p>
+      <div class="landing-card">
+        <h3>\u{1F476} Crear nuevo Baby Shower</h3>
+        <div class="form-grid">
+          <input class="input" id="l-baby-name" placeholder="Nombre del bebe *" autofocus
+            onkeydown="if(event.key==='Enter')createSession()">
+          <button class="btn btn-primary" onclick="createSession()">\u{1F389} Crear lista de regalos</button>
+        </div>
+      </div>
+      <p class="landing-note">Si ya tienes un link de baby shower, simplemente abrelo directamente.</p>
+    </div>
+  `;
+}
+
+function slugify(text) {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 30);
+}
+
+async function createSession() {
+  const name = document.getElementById("l-baby-name").value.trim();
+  if (!name) return notify("Ingresa el nombre del bebe", "error");
+
+  const slug = slugify(name) || 'bebe';
+  // Check if exists, add random suffix if needed
+  const snap = await db.ref(`sessions/${slug}/settings`).once("value");
+  let finalSlug = slug;
+  if (snap.exists()) {
+    finalSlug = slug + '-' + Math.random().toString(36).substring(2, 6);
   }
-  applyTheme(appSettings.customColor);
-  document.title = `Beibi Shower de ${appSettings.babyName} \u2014 Lista de Regalos`;
-  dataLoaded = true;
-  render();
-});
+
+  // Create session
+  await db.ref(`sessions/${finalSlug}/settings`).set({
+    babyName: name,
+    customColor: '#7c6ca8',
+    babyEmoji: '\u{1F476}',
+  });
+
+  // Navigate to new session
+  window.location.search = `?s=${finalSlug}`;
+}
 
 // --- RENDER ---
 function render() {
@@ -688,6 +834,7 @@ function render() {
 
   app.innerHTML = `
     <div class="header">
+      <button class="help-btn" onclick="showHelpModal()" title="Como funciona">?</button>
       <img class="logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
       <div class="baby-line">
         <span class="baby-icon">${appSettings.babyEmoji || '\u{1F476}'}</span>
@@ -722,7 +869,10 @@ function render() {
     <div id="content">
       ${currentView === "guest" ? renderGuest() : renderAdmin()}
     </div>
-    <div class="footer">Hecho con \u2764\uFE0F para ${esc(appSettings.babyName)}</div>
+    <div class="footer">
+      Hecho con \u2764\uFE0F para ${esc(appSettings.babyName)}
+      <br><a href="${window.location.pathname}" style="color:var(--primary);text-decoration:none;font-weight:500">Crear otro Baby Shower</a>
+    </div>
   `;
 }
 
@@ -731,17 +881,7 @@ function renderGuest() {
   const res = reserved();
   if (giftList().length === 0) return '<div class="empty">\u{1F381} Aun no hay regalos en la lista</div>';
 
-  let html = `
-    <div class="instructions">
-      <p class="instructions-title">\u{1F44B} \u00BFComo funciona?</p>
-      <ol>
-        <li>Elige un regalo de la lista que te gustaria llevar</li>
-        <li>Presiona <strong>"Lo llevo yo"</strong> e ingresa tu nombre y apellido</li>
-        <li>El regalo quedara reservado a tu nombre para que nadie mas lo repita</li>
-      </ol>
-      <p class="instructions-note">Los regalos marcados con <strong>\u221E</strong> pueden ser llevados por varias personas.</p>
-    </div>
-  `;
+  let html = "";
   if (av.length > 0) {
     html += `<p class="section-title">Disponibles</p><div class="grid">`;
     av.forEach(g => {
@@ -820,6 +960,21 @@ function renderAdmin() {
           </div>
         </div>
       </div>
+      <div class="setting-group">
+        <div class="setting-label">Link para compartir</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="input" id="s-share-link" readonly value="${window.location.origin + window.location.pathname + '?s=' + (sessionId || '')}" style="font-size:13px;color:var(--text-secondary)">
+          <button class="btn btn-secondary" style="width:auto;white-space:nowrap" onclick="copyShareLink()">Copiar</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">PIN de admin</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="s-new-pin" type="password" placeholder="Nuevo PIN" maxlength="6" style="flex:1">
+          <input class="input" id="s-new-pin-confirm" type="password" placeholder="Confirmar" maxlength="6" style="flex:1">
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="changePin()">Cambiar</button>
+        </div>
+      </div>
     </div>
 
     <div class="admin-form">
@@ -871,19 +1026,57 @@ function renderAdmin() {
 function switchView(v) { currentView = v; render(); }
 
 function showPinModal() {
-  showModal(`
-    <h3>\u{1F512} Ingresa el PIN</h3>
-    <input class="input pin-input" id="pin" type="password" maxlength="4" placeholder="\u2022\u2022\u2022\u2022" autofocus
-      onkeydown="if(event.key==='Enter')checkPin()">
-    <div id="pin-error"></div>
-    <button class="btn btn-primary" onclick="checkPin()">Entrar</button>
-  `);
-  setTimeout(() => { const el = document.getElementById("pin"); if (el) el.focus(); }, 100);
+  dbAdmin.child("pinHash").once("value", snap => {
+    const hasPin = snap.exists();
+    if (!hasPin) {
+      showModal(`
+        <h3>\u{1F512} Crear PIN de admin</h3>
+        <p class="sub">Es tu primera vez. Crea un PIN para proteger el panel de admin.</p>
+        <input class="input pin-input" id="pin" type="password" maxlength="6" placeholder="\u2022\u2022\u2022\u2022" autofocus
+          onkeydown="if(event.key==='Enter')document.getElementById('pin-confirm').focus()">
+        <input class="input pin-input" id="pin-confirm" type="password" maxlength="6" placeholder="Confirmar PIN" style="margin-top:12px"
+          onkeydown="if(event.key==='Enter')createPin()">
+        <div id="pin-error"></div>
+        <button class="btn btn-primary" onclick="createPin()">Crear PIN</button>
+      `);
+    } else {
+      showModal(`
+        <h3>\u{1F512} Ingresa el PIN</h3>
+        <input class="input pin-input" id="pin" type="password" maxlength="6" placeholder="\u2022\u2022\u2022\u2022" autofocus
+          onkeydown="if(event.key==='Enter')checkPin()">
+        <div id="pin-error"></div>
+        <button class="btn btn-primary" onclick="checkPin()">Entrar</button>
+      `);
+    }
+    setTimeout(() => { const el = document.getElementById("pin"); if (el) el.focus(); }, 100);
+  });
 }
 
-function checkPin() {
+async function createPin() {
   const pin = document.getElementById("pin").value;
-  if (pin === ADMIN_PIN) {
+  const confirm = document.getElementById("pin-confirm").value;
+  if (!pin || pin.length < 4) {
+    document.getElementById("pin-error").innerHTML = '<p class="error">El PIN debe tener al menos 4 digitos</p>';
+    return;
+  }
+  if (pin !== confirm) {
+    document.getElementById("pin-error").innerHTML = '<p class="error">Los PINs no coinciden</p>';
+    return;
+  }
+  const hashed = await hashPin(pin);
+  await dbAdmin.set({ pinHash: hashed });
+  currentView = "admin";
+  closeModal();
+  render();
+  notify("PIN creado. No lo olvides!");
+}
+
+async function checkPin() {
+  const pin = document.getElementById("pin").value;
+  if (!pin) return;
+  const hashed = await hashPin(pin);
+  const snap = await dbAdmin.child("pinHash").once("value");
+  if (snap.val() === hashed) {
     currentView = "admin";
     closeModal();
     render();
@@ -937,6 +1130,19 @@ function showDeleteModal(id) {
 }
 
 function deleteGift(id) { dbGifts.child(id).remove(); closeModal(); notify("Regalo eliminado"); }
+
+function showHelpModal() {
+  showModal(`
+    <h3>\u{1F44B} \u00BFComo funciona?</h3>
+    <ol style="padding-left:20px;line-height:1.8;font-size:14px;margin-bottom:16px">
+      <li>Elige un regalo de la lista que te gustaria llevar</li>
+      <li>Presiona <strong>"Lo llevo yo"</strong> e ingresa tu nombre y apellido</li>
+      <li>El regalo quedara reservado a tu nombre para que nadie mas lo repita</li>
+    </ol>
+    <p style="font-size:13px;color:var(--text-secondary)">Los regalos marcados con <strong>\u221E</strong> pueden ser llevados por varias personas.</p>
+    <button class="btn btn-primary" onclick="closeModal()">Entendido</button>
+  `);
+}
 
 function showReserveModal(id) {
   const g = gifts[id];
@@ -1009,6 +1215,23 @@ function applyHexColor() {
   applyTheme(hex);
   dbSettings.update({ customColor: hex });
   notify("Color actualizado");
+}
+
+function copyShareLink() {
+  const input = document.getElementById("s-share-link");
+  navigator.clipboard.writeText(input.value).then(() => notify("Link copiado al portapapeles"));
+}
+
+async function changePin() {
+  const pin = document.getElementById("s-new-pin").value;
+  const confirm = document.getElementById("s-new-pin-confirm").value;
+  if (!pin || pin.length < 4) return notify("El PIN debe tener al menos 4 digitos", "error");
+  if (pin !== confirm) return notify("Los PINs no coinciden", "error");
+  const hashed = await hashPin(pin);
+  await dbAdmin.set({ pinHash: hashed });
+  document.getElementById("s-new-pin").value = '';
+  document.getElementById("s-new-pin-confirm").value = '';
+  notify("PIN actualizado");
 }
 
 // --- MODAL UTILS ---
