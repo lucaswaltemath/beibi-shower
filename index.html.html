@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby Shower — Lista de Regalos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #FAFAFA; color: #1a1a1a; min-height: 100vh; }
+
+  /* HEADER */
+  .header { padding: 32px 20px 20px; text-align: center; border-bottom: 1px solid #eee; background: #fff; }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { font-size: 14px; color: #888; margin-top: 6px; }
+
+  /* NAV */
+  .nav { display: flex; justify-content: center; gap: 8px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #eee; }
+  .nav button { padding: 8px 20px; border-radius: 24px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; background: #f0f0f0; color: #666; }
+  .nav button.active { background: #1a1a1a; color: #fff; }
+
+  /* GRID */
+  .section-title { font-size: 13px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin: 24px 20px 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 20px; }
+  .card { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee; position: relative; transition: opacity 0.3s; }
+  .card.reserved { opacity: 0.55; }
+  .card img { width: 100%; height: 200px; object-fit: cover; background: #f5f5f5; display: block; }
+  .card .placeholder { width: 100%; height: 200px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #ccc; }
+  .card-body { padding: 16px; }
+  .card-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .card-price { font-size: 18px; font-weight: 700; margin: 8px 0; }
+  .card .badge { position: absolute; top: 12px; right: 12px; background: #1a1a1a; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .card .reserved-by { font-size: 12px; color: #888; margin-top: 4px; }
+  .card-actions { display: flex; gap: 8px; }
+
+  /* BUTTONS */
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; transition: opacity 0.2s; }
+  .btn-primary { background: #1a1a1a; color: #fff; }
+  .btn-secondary { background: #f0f0f0; color: #333; }
+  .btn-danger { background: #ffebee; color: #c62828; }
+  .btn-warn { background: #fff3e0; color: #e65100; }
+  .btn-sm { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; width: auto; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn-link { color: #0066cc; background: none; border: none; cursor: pointer; font-size: 13px; font-weight: 600; padding: 0; text-decoration: none; text-align: center; white-space: nowrap; }
+
+  /* FORMS */
+  .input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; outline: none; font-family: inherit; transition: border 0.2s; }
+  .input:focus { border-color: #1a1a1a; }
+  .admin-form { background: #fff; margin: 20px; border-radius: 12px; padding: 20px; border: 1px solid #eee; }
+  .admin-form h3 { margin-bottom: 16px; font-size: 16px; }
+  .form-grid { display: flex; flex-direction: column; gap: 12px; }
+  .admin-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+  .admin-row .info { flex: 1; min-width: 0; }
+  .admin-row .info p:first-child { font-weight: 600; font-size: 14px; }
+  .admin-row .info p:last-child { font-size: 13px; color: #888; margin-top: 2px; }
+  .admin-row .info .reserved-link { margin-left: 8px; color: #0066cc; }
+  .admin-list { padding: 0 20px 40px; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; max-width: 380px; width: 100%; }
+  .modal h3 { margin-bottom: 16px; font-size: 18px; }
+  .modal .sub { color: #888; font-size: 14px; margin: -12px 0 20px; }
+  .modal .error { color: #ff4444; font-size: 12px; margin-top: 8px; }
+  .modal .btn { margin-top: 16px; }
+  .modal .btn-row { display: flex; gap: 8px; margin-top: 16px; }
+  .modal .btn-row .btn { margin-top: 0; }
+
+  /* PIN */
+  .pin-input { text-align: center; font-size: 24px; letter-spacing: 8px; }
+  .pin-input.error { border-color: #ff4444; }
+
+  /* NOTIFICATION */
+  .notif { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #1a1a1a; color: #fff; padding: 10px 24px; border-radius: 24px; font-size: 13px; font-weight: 600; animation: fadeIn 0.3s ease; }
+  .notif.error { background: #ff4444; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  .empty { text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px; }
+  .loading { display: flex; gap: 6px; justify-content: center; padding: 80px 0; }
+  .loading .dot { width: 10px; height: 10px; border-radius: 50%; background: #a0a0a0; animation: pulse 1.2s ease-in-out infinite; }
+  .loading .dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
+
+<!-- Firebase SDK (compat mode for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+// ============================================================
+// 🔧 CONFIGURACIÓN — Reemplaza con tus datos de Firebase
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAkOS71G8PvL9xzERJ3DtW8ohBVy5WIXmk",
+  authDomain: "beibi-shower.firebaseapp.com",
+  databaseURL: "https://beibi-shower-default-rtdb.firebaseio.com",
+  projectId: "beibi-shower",
+  storageBucket: "beibi-shower.firebasestorage.app",
+  messagingSenderId: "518768252435",
+  appId: "1:518768252435:web:686fb6db0d19ce500bd1e6"
+};
+
+const ADMIN_PIN = "1234"; // Cambia esto por tu PIN secreto
+const PAGE_TITLE = "Baby Shower";
+const PAGE_SUBTITLE = "Lista de Regalos";
+// ============================================================
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.database().ref("gifts");
+
+let gifts = {};
+let currentView = "guest";
+let editingId = null;
+let notifTimer = null;
+
+// --- HELPERS ---
+const $ = sel => document.querySelector(sel);
+const formatPrice = p => Number(p).toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
+const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
+const available = () => giftList().filter(g => !g.reservedBy);
+const reserved = () => giftList().filter(g => g.reservedBy);
+
+function notify(msg, type = "success") {
+  clearTimeout(notifTimer);
+  let el = document.getElementById("notif");
+  if (!el) { el = document.createElement("div"); el.id = "notif"; document.body.appendChild(el); }
+  el.className = "notif" + (type === "error" ? " error" : "");
+  el.textContent = msg;
+  el.style.display = "block";
+  notifTimer = setTimeout(() => el.style.display = "none", 2500);
+}
+
+// --- FIREBASE LISTENER ---
+db.on("value", snap => {
+  gifts = snap.val() || {};
+  render();
+});
+
+// --- RENDER ---
+function render() {
+  const app = $("#app");
+  app.innerHTML = `
+    <div class="header">
+      <h1>${PAGE_TITLE}</h1>
+      <p>${PAGE_SUBTITLE}</p>
+    </div>
+    <div class="nav">
+      <button class="${currentView === 'guest' ? 'active' : ''}" onclick="switchView('guest')">
+        Regalos ${available().length > 0 ? '(' + available().length + ')' : ''}
+      </button>
+      <button class="${currentView === 'admin' ? 'active' : ''}" onclick="${currentView === 'admin' ? '' : 'showPinModal()'}">
+        Admin
+      </button>
+    </div>
+    <div id="content">
+      ${currentView === "guest" ? renderGuest() : renderAdmin()}
+    </div>
+  `;
+}
+
+function renderGuest() {
+  const av = available();
+  const res = reserved();
+  if (giftList().length === 0) return '<div class="empty">Aún no hay regalos en la lista</div>';
+
+  let html = "";
+  if (av.length > 0) {
+    html += `<p class="section-title">Disponibles</p><div class="grid">`;
+    av.forEach(g => {
+      html += `
+        <div class="card">
+          ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <div class="placeholder" style="${g.image ? 'display:none' : ''}">🎁</div>
+          <div class="card-body">
+            <p class="card-name">${esc(g.name)}</p>
+            <p class="card-price">${formatPrice(g.price)}</p>
+            <div class="card-actions">
+              <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo</button>
+              ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver ↗</a>` : ''}
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+  if (res.length > 0) {
+    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="grid">`;
+    res.forEach(g => {
+      html += `
+        <div class="card reserved">
+          <div class="badge">Reservado</div>
+          ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+          <div class="placeholder" style="${g.image ? 'display:none' : ''}">🎁</div>
+          <div class="card-body">
+            <p class="card-name">${esc(g.name)}</p>
+            <p class="card-price">${formatPrice(g.price)}</p>
+            <p class="reserved-by">por ${esc(g.reservedBy)}</p>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+  return html;
+}
+
+function renderAdmin() {
+  const all = giftList();
+  const editing = editingId ? gifts[editingId] : null;
+
+  let html = `
+    <div class="admin-form">
+      <h3>${editing ? 'Editar regalo' : 'Agregar regalo'}</h3>
+      <div class="form-grid">
+        <input class="input" id="f-name" placeholder="Nombre del regalo *" value="${editing ? esc(editing.name) : ''}">
+        <input class="input" id="f-image" placeholder="URL de la imagen" value="${editing ? esc(editing.image || '') : ''}">
+        <input class="input" id="f-link" placeholder="Link de compra" value="${editing ? esc(editing.link || '') : ''}">
+        <input class="input" id="f-price" placeholder="Precio (CLP) *" type="number" value="${editing ? editing.price : ''}">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveGift()">
+            ${editing ? 'Guardar cambios' : 'Agregar'}
+          </button>
+          ${editing ? '<button class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>' : ''}
+        </div>
+      </div>
+    </div>
+    <p class="section-title">Regalos (${all.length})</p>
+    <div class="admin-list">
+  `;
+
+  if (all.length === 0) {
+    html += '<div class="empty">Agrega el primer regalo arriba</div>';
+  } else {
+    all.forEach(g => {
+      html += `
+        <div class="admin-row">
+          <div class="info">
+            <p>${esc(g.name)}</p>
+            <p>${formatPrice(g.price)}${g.reservedBy ? `<span class="reserved-link">→ ${esc(g.reservedBy)}</span>` : ''}</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
+          ${g.reservedBy ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">✕</button>
+        </div>`;
+    });
+  }
+  html += `</div>`;
+  return html;
+}
+
+// --- ACTIONS ---
+function switchView(v) { currentView = v; render(); }
+
+function showPinModal() {
+  showModal(`
+    <h3>Ingresa el PIN</h3>
+    <input class="input pin-input" id="pin" type="password" maxlength="4" placeholder="••••" autofocus
+      onkeydown="if(event.key==='Enter')checkPin()">
+    <div id="pin-error"></div>
+    <button class="btn btn-primary" onclick="checkPin()">Entrar</button>
+  `);
+  setTimeout(() => { const el = document.getElementById("pin"); if (el) el.focus(); }, 100);
+}
+
+function checkPin() {
+  const pin = document.getElementById("pin").value;
+  if (pin === ADMIN_PIN) {
+    currentView = "admin";
+    closeModal();
+    render();
+  } else {
+    document.getElementById("pin").classList.add("error");
+    document.getElementById("pin-error").innerHTML = '<p class="error">PIN incorrecto</p>';
+  }
+}
+
+function saveGift() {
+  const name = $("#f-name").value.trim();
+  const image = $("#f-image").value.trim();
+  const link = $("#f-link").value.trim();
+  const price = $("#f-price").value;
+  if (!name || !price) return;
+
+  const data = { name, image, link, price: Number(price), reservedBy: null };
+
+  if (editingId) {
+    data.reservedBy = gifts[editingId].reservedBy || null;
+    db.child(editingId).set(data);
+    editingId = null;
+    notify("Regalo actualizado");
+  } else {
+    db.push(data);
+    notify("Regalo agregado");
+  }
+}
+
+function startEdit(id) {
+  editingId = id;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelEdit() { editingId = null; render(); }
+
+function showDeleteModal(id) {
+  const g = gifts[id];
+  showModal(`
+    <h3>Eliminar regalo</h3>
+    <p class="sub">¿Seguro que quieres eliminar "${esc(g.name)}"?</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;background:#ff4444" onclick="deleteGift('${id}')">Eliminar</button>
+    </div>
+  `);
+}
+
+function deleteGift(id) { db.child(id).remove(); closeModal(); notify("Regalo eliminado"); }
+
+function showReserveModal(id) {
+  const g = gifts[id];
+  showModal(`
+    <h3>Reservar regalo</h3>
+    <p class="sub">${esc(g.name)} — ${formatPrice(g.price)}</p>
+    <input class="input" id="guest-name" placeholder="Tu nombre" autofocus
+      onkeydown="if(event.key==='Enter')reserveGift('${id}')">
+    <button class="btn btn-primary" onclick="reserveGift('${id}')">Confirmar</button>
+  `);
+  setTimeout(() => { const el = document.getElementById("guest-name"); if (el) el.focus(); }, 100);
+}
+
+function reserveGift(id) {
+  const name = document.getElementById("guest-name").value.trim();
+  if (!name) return;
+  db.child(id).update({ reservedBy: name });
+  closeModal();
+  notify("Regalo reservado con tu nombre");
+}
+
+function unreserve(id) {
+  db.child(id).update({ reservedBy: null });
+  notify("Reserva cancelada");
+}
+
+// --- MODAL UTILS ---
+function showModal(content) {
+  let overlay = document.getElementById("modal-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "modal-overlay";
+    overlay.className = "modal-overlay";
+    overlay.onclick = e => { if (e.target === overlay) closeModal(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `<div class="modal">${content}</div>`;
+  overlay.style.display = "flex";
+}
+
+function closeModal() {
+  const overlay = document.getElementById("modal-overlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+function esc(s) {
+  if (!s) return "";
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
