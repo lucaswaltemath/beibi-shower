@@ -490,6 +490,51 @@
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
   }
 
+  /* LANDING PAGE */
+  .landing {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .landing-logo {
+    max-width: 200px;
+    height: auto;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+  }
+  .landing-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 340px;
+    line-height: 1.5;
+  }
+  .landing-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
+  }
+  .landing-card h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .landing-note {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 24px;
+    max-width: 340px;
+    line-height: 1.5;
+  }
+
   .empty {
     text-align: center;
     padding: 60px 20px;
@@ -582,15 +627,35 @@ const BABY_EMOJIS = [
 ];
 
 const DEFAULT_SETTINGS = {
-  babyName: 'Kai',
+  babyName: '',
   customColor: '#7c6ca8',
   babyEmoji: '\u{1F476}',
 };
 
 firebase.initializeApp(FIREBASE_CONFIG);
-const dbGifts = firebase.database().ref("gifts");
-const dbSettings = firebase.database().ref("settings");
-const dbAdmin = firebase.database().ref("admin");
+const db = firebase.database();
+
+// --- SESSION MANAGEMENT ---
+function getSessionId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('s');
+}
+
+let sessionId = getSessionId();
+let dbGifts = null;
+let dbSettings = null;
+let dbAdmin = null;
+
+function initSession(id) {
+  sessionId = id;
+  dbGifts = db.ref(`sessions/${id}/gifts`);
+  dbSettings = db.ref(`sessions/${id}/settings`);
+  dbAdmin = db.ref(`sessions/${id}/admin`);
+}
+
+if (sessionId) {
+  initSession(sessionId);
+}
 
 let gifts = {};
 let appSettings = { ...DEFAULT_SETTINGS };
@@ -660,21 +725,105 @@ function notify(msg, type = "success") {
 }
 
 // --- FIREBASE LISTENERS ---
-dbGifts.on("value", snap => {
-  gifts = snap.val() || {};
-  if (dataLoaded) render();
-});
+function startListeners() {
+  dbGifts.on("value", snap => {
+    gifts = snap.val() || {};
+    if (dataLoaded) render();
+  });
 
-dbSettings.on("value", snap => {
-  const s = snap.val();
-  if (s) {
-    appSettings = { ...DEFAULT_SETTINGS, ...s };
+  dbSettings.on("value", snap => {
+    const s = snap.val();
+    if (s) {
+      appSettings = { ...DEFAULT_SETTINGS, ...s };
+    }
+    applyTheme(appSettings.customColor);
+    document.title = `Beibi Shower de ${appSettings.babyName} \u2014 Lista de Regalos`;
+    dataLoaded = true;
+    render();
+  });
+}
+
+// --- MIGRATE OLD DATA (one-time: root → /sessions/kai/) ---
+async function migrateIfNeeded() {
+  const oldGifts = await db.ref("gifts").once("value");
+  if (!oldGifts.exists()) return; // nothing to migrate
+
+  const alreadyMigrated = await db.ref("sessions/kai/settings").once("value");
+  if (alreadyMigrated.exists()) return; // already done
+
+  const oldSettings = await db.ref("settings").once("value");
+  const oldAdmin = await db.ref("admin").once("value");
+
+  const updates = {};
+  if (oldGifts.val()) updates["sessions/kai/gifts"] = oldGifts.val();
+  if (oldSettings.val()) updates["sessions/kai/settings"] = oldSettings.val();
+  else updates["sessions/kai/settings"] = { babyName: 'Kai', customColor: '#7c6ca8', babyEmoji: '\u{1F476}' };
+  if (oldAdmin.val()) updates["sessions/kai/admin"] = oldAdmin.val();
+
+  await db.ref().update(updates);
+  console.log("Datos de Kai migrados a /sessions/kai/");
+}
+
+migrateIfNeeded();
+
+if (sessionId) {
+  startListeners();
+} else {
+  renderLanding();
+}
+
+// --- LANDING PAGE ---
+function renderLanding() {
+  const app = $("#app");
+  applyTheme('#7c6ca8');
+  document.title = 'Beibi Shower \u2014 Crea tu lista de regalos';
+  app.innerHTML = `
+    <div class="landing">
+      <img class="landing-logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
+      <p class="landing-sub">Crea una lista de regalos para tu baby shower en segundos</p>
+      <div class="landing-card">
+        <h3>\u{1F476} Crear nuevo Baby Shower</h3>
+        <div class="form-grid">
+          <input class="input" id="l-baby-name" placeholder="Nombre del bebe *" autofocus
+            onkeydown="if(event.key==='Enter')createSession()">
+          <button class="btn btn-primary" onclick="createSession()">\u{1F389} Crear lista de regalos</button>
+        </div>
+      </div>
+      <p class="landing-note">Si ya tienes un link de baby shower, simplemente abrelo directamente.</p>
+    </div>
+  `;
+}
+
+function slugify(text) {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 30);
+}
+
+async function createSession() {
+  const name = document.getElementById("l-baby-name").value.trim();
+  if (!name) return notify("Ingresa el nombre del bebe", "error");
+
+  const slug = slugify(name) || 'bebe';
+  // Check if exists, add random suffix if needed
+  const snap = await db.ref(`sessions/${slug}/settings`).once("value");
+  let finalSlug = slug;
+  if (snap.exists()) {
+    finalSlug = slug + '-' + Math.random().toString(36).substring(2, 6);
   }
-  applyTheme(appSettings.customColor);
-  document.title = `Beibi Shower de ${appSettings.babyName} \u2014 Lista de Regalos`;
-  dataLoaded = true;
-  render();
-});
+
+  // Create session
+  await db.ref(`sessions/${finalSlug}/settings`).set({
+    babyName: name,
+    customColor: '#7c6ca8',
+    babyEmoji: '\u{1F476}',
+  });
+
+  // Navigate to new session
+  window.location.search = `?s=${finalSlug}`;
+}
 
 // --- RENDER ---
 function render() {
@@ -720,7 +869,10 @@ function render() {
     <div id="content">
       ${currentView === "guest" ? renderGuest() : renderAdmin()}
     </div>
-    <div class="footer">Hecho con \u2764\uFE0F para ${esc(appSettings.babyName)}</div>
+    <div class="footer">
+      Hecho con \u2764\uFE0F para ${esc(appSettings.babyName)}
+      <br><a href="${window.location.pathname}" style="color:var(--primary);text-decoration:none;font-weight:500">Crear otro Baby Shower</a>
+    </div>
   `;
 }
 
@@ -806,6 +958,13 @@ function renderAdmin() {
               onkeydown="if(event.key==='Enter')applyHexColor()">
             <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="applyHexColor()">Aplicar</button>
           </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">Link para compartir</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="input" id="s-share-link" readonly value="${window.location.origin + window.location.pathname + '?s=' + (sessionId || '')}" style="font-size:13px;color:var(--text-secondary)">
+          <button class="btn btn-secondary" style="width:auto;white-space:nowrap" onclick="copyShareLink()">Copiar</button>
         </div>
       </div>
       <div class="setting-group">
@@ -1056,6 +1215,11 @@ function applyHexColor() {
   applyTheme(hex);
   dbSettings.update({ customColor: hex });
   notify("Color actualizado");
+}
+
+function copyShareLink() {
+  const input = document.getElementById("s-share-link");
+  navigator.clipboard.writeText(input.value).then(() => notify("Link copiado al portapapeles"));
 }
 
 async function changePin() {
