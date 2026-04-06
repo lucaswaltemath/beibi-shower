@@ -525,6 +525,13 @@
     max-width: 320px;
     line-height: 1.6;
   }
+  .chile-flag {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 2px;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  }
   .landing-card {
     background: #fff;
     border-radius: 16px;
@@ -878,7 +885,7 @@ function renderLanding() {
   app.innerHTML = `
     <div class="landing">
       <img class="landing-logo fade-in" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
-      <p class="landing-sub fade-in d1">Crea una lista de regalos para tu baby shower en segundos \u{1F1E8}\u{1F1F1}</p>
+      <p class="landing-sub fade-in d1">Crea una lista de regalos para tu baby shower en segundos <svg class="chile-flag" width="20" height="14" viewBox="0 0 20 14"><rect width="20" height="14" fill="#D52B1E"/><rect width="20" height="7" fill="#fff"/><rect width="7" height="14" fill="#0039A6"/><polygon points="3.5,3 4.1,4.8 6,4.8 4.4,5.9 5,7.7 3.5,6.6 2,7.7 2.6,5.9 1,4.8 2.9,4.8" fill="#fff"/></svg></p>
       <div class="landing-card fade-in d2">
         <h3>\u{1F476} Crear nuevo Beibi Shower</h3>
         <div class="form-grid">
