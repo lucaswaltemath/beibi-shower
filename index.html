@@ -1310,7 +1310,10 @@ function saveGift() {
 function startEdit(id) {
   editingId = id;
   render();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => {
+    const form = document.querySelector('.admin-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
 }
 
 function cancelEdit() { editingId = null; render(); }
