@@ -233,7 +233,19 @@
     font-size: 48px;
   }
   .card-body { padding: 16px; }
-  .card-name { font-size: 16px; font-weight: 600; margin-bottom: 2px; color: var(--text); }
+  .card-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-name:hover {
+    white-space: normal;
+    overflow: visible;
+  }
   .card-price {
     font-size: 20px;
     font-weight: 700;
@@ -257,6 +269,13 @@
     color: var(--text-secondary);
     margin-top: 4px;
     font-style: italic;
+  }
+  .card-reservers-count {
+    font-size: 12px;
+    vertical-align: middle;
+    cursor: default;
+    letter-spacing: -2px;
+    margin-left: 4px;
   }
   .card-actions { display: flex; gap: 8px; margin-top: 4px; }
 
@@ -1056,22 +1075,31 @@ function render() {
       </div>
       <div class="subtitle">Lista de regalos</div>
     </div>
-    ${currentView === 'guest' && total > 0 ? `
+    ${currentView === 'guest' && total > 0 ? (() => {
+      let reservedCount = res.length;
+      let reservedMoney = 0;
+      res.forEach(g => reservedMoney += Number(g.price) || 0);
+      giftList().filter(g => g.unlimited && g.reservedByList).forEach(g => {
+        const c = Object.keys(g.reservedByList).length;
+        reservedCount += c;
+        reservedMoney += (Number(g.price) || 0) * c;
+      });
+      return `
     <div class="stats">
       <div class="stat">
         <div class="stat-number">${av.length}</div>
         <div class="stat-label">Disponibles</div>
       </div>
       <div class="stat">
-        <div class="stat-number">${res.length}</div>
+        <div class="stat-number">${reservedCount}</div>
         <div class="stat-label">Reservados</div>
       </div>
       <div class="stat">
-        <div class="stat-number">${total}</div>
-        <div class="stat-label">Total</div>
+        <div class="stat-number">${formatPrice(reservedMoney)}</div>
+        <div class="stat-label">Comprometido</div>
       </div>
-    </div>
-    ` : ''}
+    </div>`;
+    })() : ''}
     <div class="nav">
       <button class="${currentView === 'guest' ? 'active' : ''}" onclick="switchView('guest')">
         \u{1F381} Regalos
@@ -1100,16 +1128,15 @@ function renderGuest() {
     html += `<p class="section-title">Disponibles</p><div class="grid">`;
     av.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
-      const reserverAnimals = reservers.map(r => typeof r === 'object' ? r.animal : r);
+      const count = reservers.length;
       html += `
         <div class="card">
           ${g.unlimited ? '<div class="badge" style="background:var(--success)">\u221E Ilimitado</div>' : ''}
           ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
           <div class="placeholder" style="${g.image ? 'display:none' : ''}">\u{1F381}</div>
           <div class="card-body">
-            <p class="card-name">${esc(g.name)}</p>
-            <p class="card-price">${formatPrice(g.price)}</p>
-            ${reserverAnimals.length > 0 ? `<p class="reserved-by">${reserverAnimals.map(r => esc(r)).join(', ')}</p>` : ''}
+            <p class="card-name" title="${esc(g.name)}">${esc(g.name)}</p>
+            <p class="card-price">${formatPrice(g.price)}${count > 0 ? ` <span class="card-reservers-count" title="${reservers.map(r => typeof r === 'object' ? r.animal : r).join(', ')}">${'\u{1F464}'.repeat(Math.min(count, 5))}${count > 5 ? '+' + (count - 5) : ''}</span>` : ''}</p>
             <div class="card-actions">
               <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo \u{1F64B}</button>
               ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver \u2197</a>` : ''}
@@ -1128,7 +1155,7 @@ function renderGuest() {
           ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
           <div class="placeholder" style="${g.image ? 'display:none' : ''}">\u{1F381}</div>
           <div class="card-body">
-            <p class="card-name">${esc(g.name)}</p>
+            <p class="card-name" title="${esc(g.name)}">${esc(g.name)}</p>
             <p class="card-price">${formatPrice(g.price)}</p>
             <p class="reserved-by">por ${esc(g.reservedByAnimal || g.reservedBy)}</p>
           </div>
