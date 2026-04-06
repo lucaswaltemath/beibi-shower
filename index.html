@@ -324,7 +324,16 @@
     box-shadow: var(--shadow-sm);
   }
   .admin-form h3 { margin-bottom: 16px; font-size: 16px; color: var(--text); }
-  .form-grid { display: flex; flex-direction: column; gap: 12px; }
+  .form-grid { display: flex; flex-direction: column; gap: 14px; }
+  .field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
   .form-row { display: flex; gap: 12px; }
   .form-row .input { flex: 1; }
 
@@ -1169,10 +1178,10 @@ function renderAdmin() {
     <div class="admin-form">
       <h3>${editing ? '\u270F\uFE0F Editar regalo' : '\u2795 Agregar regalo'}</h3>
       <div class="form-grid">
-        <input class="input" id="f-name" placeholder="Nombre del regalo *" value="${editing ? esc(editing.name) : ''}">
-        <input class="input" id="f-image" placeholder="URL de la imagen" value="${editing ? esc(editing.image || '') : ''}">
-        <input class="input" id="f-link" placeholder="Link de compra" value="${editing ? esc(editing.link || '') : ''}">
-        <input class="input" id="f-price" placeholder="Precio (CLP) *" type="number" value="${editing ? editing.price : ''}">
+        <div><label class="field-label">Nombre del regalo *</label><input class="input" id="f-name" placeholder="Ej: Coche, Cuna, Ropa..." value="${editing ? esc(editing.name) : ''}"></div>
+        <div><label class="field-label">URL de la imagen</label><input class="input" id="f-image" placeholder="https://..." value="${editing ? esc(editing.image || '') : ''}"></div>
+        <div><label class="field-label">Link de compra</label><input class="input" id="f-link" placeholder="https://..." value="${editing ? esc(editing.link || '') : ''}"></div>
+        <div><label class="field-label">Precio (CLP) *</label><input class="input" id="f-price" placeholder="Ej: 29990" type="number" value="${editing ? editing.price : ''}"></div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text-secondary)">
           <input type="checkbox" id="f-unlimited" ${editing && editing.unlimited ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)">
           Permite multiples reservas (ropa, calcetines, etc.)
