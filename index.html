@@ -110,6 +110,17 @@
     position: relative;
     letter-spacing: 0.3px;
   }
+  .header .event-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    font-size: 13px;
+    opacity: 0.85;
+    position: relative;
+  }
   .header .help-btn {
     position: absolute;
     top: 16px;
@@ -755,6 +766,12 @@ async function hashPin(pin) {
 
 const $ = sel => document.querySelector(sel);
 const formatPrice = p => Number(p).toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
+function formatEventDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+}
 const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
 const available = () => giftList().filter(g => !g.reservedBy || g.unlimited);
 const reserved = () => giftList().filter(g => g.reservedBy && !g.unlimited);
@@ -992,6 +1009,12 @@ function render() {
         <span class="baby-icon">${appSettings.babyEmoji || '\u{1F476}'}</span>
       </div>
       <div class="subtitle">Lista de regalos</div>
+      ${appSettings.eventPlace || appSettings.eventDate ? `
+      <div class="event-info">
+        ${appSettings.eventPlace ? `<span>\u{1F4CD} ${esc(appSettings.eventPlace)}</span>` : ''}
+        ${appSettings.eventDate ? `<span>\u{1F4C5} ${formatEventDate(appSettings.eventDate)}${appSettings.eventTime ? ' \u2022 ' + appSettings.eventTime + ' hrs' : ''}</span>` : ''}
+      </div>
+      ` : ''}
     </div>
     ${currentView === 'guest' && total > 0 ? `
     <div class="stats">
@@ -1087,6 +1110,17 @@ function renderAdmin() {
         <div style="display:flex;gap:8px">
           <input class="input" id="s-baby-name" placeholder="Nombre" value="${esc(appSettings.babyName)}">
           <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="saveBabyName()">Guardar</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">Evento</div>
+        <div class="form-grid">
+          <input class="input" id="s-event-place" placeholder="Lugar (ej: Casa de los abuelos)" value="${esc(appSettings.eventPlace || '')}">
+          <div style="display:flex;gap:8px">
+            <input class="input" id="s-event-date" type="date" value="${appSettings.eventDate || ''}" style="flex:1">
+            <input class="input" id="s-event-time" type="time" value="${appSettings.eventTime || ''}" style="flex:0 0 120px">
+          </div>
+          <button class="btn btn-primary" onclick="saveEvent()">Guardar evento</button>
         </div>
       </div>
       <div class="setting-group">
@@ -1337,6 +1371,14 @@ function unreserve(id) {
 }
 
 // --- SETTINGS ---
+function saveEvent() {
+  const place = document.getElementById("s-event-place").value.trim();
+  const date = document.getElementById("s-event-date").value;
+  const time = document.getElementById("s-event-time").value;
+  dbSettings.update({ eventPlace: place, eventDate: date, eventTime: time });
+  notify("Evento actualizado");
+}
+
 function saveBabyName() {
   const name = document.getElementById("s-baby-name").value.trim();
   if (!name) return notify("Ingresa un nombre", "error");
