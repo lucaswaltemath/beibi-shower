@@ -238,7 +238,16 @@
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    padding: 8px 20px 20px;
+  }
+  .grid .card img { height: 160px; }
+  .grid .card .placeholder { height: 160px; font-size: 36px; }
+
+  .grid-lg {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 18px;
     padding: 8px 20px 20px;
   }
@@ -929,7 +938,7 @@ let currentView = "guest";
 let editingId = null;
 let notifTimer = null;
 let dataLoaded = false;
-let viewMode = localStorage.getItem('viewMode') || 'grid';
+let viewMode = localStorage.getItem('viewMode') || 'grid-lg';
 let sortMode = localStorage.getItem('sortMode') || 'default';
 
 // --- HELPERS ---
@@ -1240,8 +1249,11 @@ function render() {
           <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>A - Z</option>
         </select>
         <div class="view-toggle">
-          <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Grilla">
+          <button class="view-btn ${viewMode === 'grid-lg' ? 'active' : ''}" onclick="setViewMode('grid-lg')" title="Tarjetas grandes">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Tarjetas">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5" rx="1"/><rect x="5.75" y="0" width="4.5" height="4.5" rx="1"/><rect x="11.5" y="0" width="4.5" height="4.5" rx="1"/><rect x="0" y="5.75" width="4.5" height="4.5" rx="1"/><rect x="5.75" y="5.75" width="4.5" height="4.5" rx="1"/><rect x="11.5" y="5.75" width="4.5" height="4.5" rx="1"/><rect x="0" y="11.5" width="4.5" height="4.5" rx="1"/><rect x="5.75" y="11.5" width="4.5" height="4.5" rx="1"/><rect x="11.5" y="11.5" width="4.5" height="4.5" rx="1"/></svg>
           </button>
           <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')" title="Lista">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
@@ -1267,7 +1279,7 @@ function renderGuest() {
 
   let html = "";
   if (av.length > 0) {
-    html += `<p class="section-title">Disponibles</p><div class="${viewMode === 'list' ? 'list-view' : 'grid'}">`;
+    html += `<p class="section-title">Disponibles</p><div class="${viewMode === 'list' ? 'list-view' : viewMode === 'grid-lg' ? 'grid-lg' : 'grid'}">`;
     av.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
       const count = reservers.length;
@@ -1289,7 +1301,7 @@ function renderGuest() {
     html += `</div>`;
   }
   if (res.length > 0) {
-    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="${viewMode === 'list' ? 'list-view' : 'grid'}">`;
+    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="${viewMode === 'list' ? 'list-view' : viewMode === 'grid-lg' ? 'grid-lg' : 'grid'}">`;
     res.forEach(g => {
       html += `
         <div class="card reserved">
