@@ -176,6 +176,30 @@
     box-shadow: 0 3px 10px rgba(124,108,168,0.3);
   }
 
+  /* VIEW TOGGLE */
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+  }
+  .view-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .view-btn:hover { background: var(--primary-light); color: var(--primary); }
+  .view-btn.active { background: var(--primary-light); color: var(--primary); }
+
   /* GRID */
   .section-title {
     font-size: 12px;
@@ -270,6 +294,44 @@
     margin-top: 4px;
     font-style: italic;
   }
+  /* LIST VIEW */
+  .list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 20px 20px;
+  }
+  .list-view .card {
+    display: flex;
+    flex-direction: row;
+    border-radius: var(--radius-sm);
+  }
+  .list-view .card img {
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  }
+  .list-view .card .placeholder {
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+    font-size: 28px;
+  }
+  .list-view .card-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 12px 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  .list-view .card-name { flex: 1; min-width: 120px; margin-bottom: 0; }
+  .list-view .card-price { margin: 0; font-size: 16px; }
+  .list-view .card-actions { margin-top: 0; }
+  .list-view .badge { top: 8px; right: 8px; font-size: 10px; padding: 3px 8px; }
+
   .card-reservers-count {
     font-size: 12px;
     vertical-align: middle;
@@ -798,6 +860,7 @@ let currentView = "guest";
 let editingId = null;
 let notifTimer = null;
 let dataLoaded = false;
+let viewMode = localStorage.getItem('viewMode') || 'grid';
 
 // --- HELPERS ---
 async function hashPin(pin) {
@@ -1075,31 +1138,22 @@ function render() {
       </div>
       <div class="subtitle">Lista de regalos</div>
     </div>
-    ${currentView === 'guest' && total > 0 ? (() => {
-      let reservedCount = res.length;
-      let reservedMoney = 0;
-      res.forEach(g => reservedMoney += Number(g.price) || 0);
-      giftList().filter(g => g.unlimited && g.reservedByList).forEach(g => {
-        const c = Object.keys(g.reservedByList).length;
-        reservedCount += c;
-        reservedMoney += (Number(g.price) || 0) * c;
-      });
-      return `
+    ${currentView === 'guest' && total > 0 ? `
     <div class="stats">
       <div class="stat">
         <div class="stat-number">${av.length}</div>
         <div class="stat-label">Disponibles</div>
       </div>
       <div class="stat">
-        <div class="stat-number">${reservedCount}</div>
+        <div class="stat-number">${res.length}</div>
         <div class="stat-label">Reservados</div>
       </div>
       <div class="stat">
-        <div class="stat-number">${formatPrice(reservedMoney)}</div>
-        <div class="stat-label">Comprometido</div>
+        <div class="stat-number">${total}</div>
+        <div class="stat-label">Total</div>
       </div>
-    </div>`;
-    })() : ''}
+    </div>
+    ` : ''}
     <div class="nav">
       <button class="${currentView === 'guest' ? 'active' : ''}" onclick="switchView('guest')">
         \u{1F381} Regalos
@@ -1107,6 +1161,16 @@ function render() {
       <button class="${currentView === 'admin' ? 'active' : ''}" onclick="${currentView === 'admin' ? '' : 'showPinModal()'}">
         \u{1F512} Admin
       </button>
+      ${currentView === 'guest' ? `
+      <div class="view-toggle">
+        <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Grilla">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')" title="Lista">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
+        </button>
+      </div>
+      ` : ''}
     </div>
     <div id="content">
       ${currentView === "guest" ? renderGuest() : renderAdmin()}
@@ -1125,7 +1189,7 @@ function renderGuest() {
 
   let html = "";
   if (av.length > 0) {
-    html += `<p class="section-title">Disponibles</p><div class="grid">`;
+    html += `<p class="section-title">Disponibles</p><div class="${viewMode === 'list' ? 'list-view' : 'grid'}">`;
     av.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
       const count = reservers.length;
@@ -1147,7 +1211,7 @@ function renderGuest() {
     html += `</div>`;
   }
   if (res.length > 0) {
-    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="grid">`;
+    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="${viewMode === 'list' ? 'list-view' : 'grid'}">`;
     res.forEach(g => {
       html += `
         <div class="card reserved">
@@ -1282,6 +1346,7 @@ function renderAdmin() {
 
 // --- ACTIONS ---
 function switchView(v) { currentView = v; render(); }
+function setViewMode(mode) { viewMode = mode; localStorage.setItem('viewMode', mode); render(); }
 
 function showPinModal() {
   dbAdmin.child("pinHash").once("value", snap => {
