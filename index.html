@@ -110,15 +110,11 @@
     position: relative;
     letter-spacing: 0.3px;
   }
-  .header .event-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-    font-size: 13px;
-    opacity: 0.85;
+  .header .event-bar {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+    letter-spacing: 0.2px;
     position: relative;
   }
   .header .help-btn {
@@ -1009,6 +1005,9 @@ function render() {
 
   app.innerHTML = `
     <div class="header">
+      ${appSettings.eventPlace || appSettings.eventDate ? `
+      <div class="event-bar">${[appSettings.eventPlace ? '\u{1F4CD} ' + esc(appSettings.eventPlace) : '', appSettings.eventDate ? formatEventDate(appSettings.eventDate) : '', appSettings.eventTime ? appSettings.eventTime + ' hrs' : ''].filter(Boolean).join(' \u00B7 ')}</div>
+      ` : ''}
       <button class="help-btn" onclick="showHelpModal()" title="Como funciona">?</button>
       <img class="logo" src="assets/beibi-shower-logo.svg" alt="Beibi Shower">
       <div class="baby-line">
@@ -1016,12 +1015,6 @@ function render() {
         <span class="baby-icon">${appSettings.babyEmoji || '\u{1F476}'}</span>
       </div>
       <div class="subtitle">Lista de regalos</div>
-      ${appSettings.eventPlace || appSettings.eventDate ? `
-      <div class="event-info">
-        ${appSettings.eventPlace ? `<span>\u{1F4CD} ${esc(appSettings.eventPlace)}</span>` : ''}
-        ${appSettings.eventDate ? `<span>\u{1F4C5} ${formatEventDate(appSettings.eventDate)}${appSettings.eventTime ? ' \u2022 ' + appSettings.eventTime + ' hrs' : ''}</span>` : ''}
-      </div>
-      ` : ''}
     </div>
     ${currentView === 'guest' && total > 0 ? `
     <div class="stats">
