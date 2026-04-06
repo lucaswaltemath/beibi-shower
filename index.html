@@ -731,6 +731,17 @@ const BABY_EMOJIS = [
   '\u{1F47C}', '\u{1F37C}', '\u{1FA77}', '\u{2B50}', '\u{1F31F}', '\u{1F49B}'
 ];
 
+const ANIMAL_NAMES = [
+  '\u{1F428} Koala', '\u{1F43B} Osito', '\u{1F98A} Zorrito', '\u{1F431} Gatito', '\u{1F436} Perrito',
+  '\u{1F430} Conejito', '\u{1F43C} Panda', '\u{1F427} Pinguino', '\u{1F989} Buho', '\u{1F98E} Lagartija',
+  '\u{1F433} Ballena', '\u{1F42C} Delfin', '\u{1F985} Aguila', '\u{1F98B} Mariposa', '\u{1F40C} Caracol',
+  '\u{1F994} Erizo', '\u{1F9A6} Nutria', '\u{1F43F}\uFE0F Ardilla', '\u{1F9A9} Flamingo', '\u{1F99C} Loro',
+  '\u{1F40A} Cocodrilo', '\u{1F422} Tortuga', '\u{1F98C} Venado', '\u{1F984} Unicornio', '\u{1F981} Leon',
+  '\u{1F99D} Mapache', '\u{1F992} Jirafa', '\u{1F9A5} Perezoso', '\u{1F419} Pulpo', '\u{1F41D} Abeja',
+  '\u{1F99A} Pavo Real', '\u{1F40B} Ballenita', '\u{1F426} Pajarito', '\u{1F98D} Gorila', '\u{1F43B}\u200D\u2744\uFE0F Oso Polar',
+  '\u{1F412} Monito', '\u{1F418} Elefante', '\u{1F993} Cebra', '\u{1F987} Murcielago', '\u{1F986} Patito'
+];
+
 const DEFAULT_SETTINGS = {
   babyName: '',
   customColor: '#4a4a4a',
@@ -785,6 +796,26 @@ function formatEventDate(dateStr) {
   return date.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 const giftList = () => Object.entries(gifts).map(([id, g]) => ({ id, ...g }));
+function getUsedAnimals() {
+  const used = new Set();
+  giftList().forEach(g => {
+    if (g.reservedByAnimal) used.add(g.reservedByAnimal);
+    if (g.reservedByList) {
+      Object.values(g.reservedByList).forEach(r => {
+        if (r && r.animal) used.add(r.animal);
+      });
+    }
+  });
+  return used;
+}
+
+function pickAnimalName() {
+  const used = getUsedAnimals();
+  const available = ANIMAL_NAMES.filter(a => !used.has(a));
+  if (available.length === 0) return ANIMAL_NAMES[Math.floor(Math.random() * ANIMAL_NAMES.length)];
+  return available[Math.floor(Math.random() * available.length)];
+}
+
 const available = () => giftList().filter(g => !g.reservedBy || g.unlimited);
 const reserved = () => giftList().filter(g => g.reservedBy && !g.unlimited);
 
@@ -1069,6 +1100,7 @@ function renderGuest() {
     html += `<p class="section-title">Disponibles</p><div class="grid">`;
     av.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
+      const reserverAnimals = reservers.map(r => typeof r === 'object' ? r.animal : r);
       html += `
         <div class="card">
           ${g.unlimited ? '<div class="badge" style="background:var(--success)">\u221E Ilimitado</div>' : ''}
@@ -1077,7 +1109,7 @@ function renderGuest() {
           <div class="card-body">
             <p class="card-name">${esc(g.name)}</p>
             <p class="card-price">${formatPrice(g.price)}</p>
-            ${reservers.length > 0 ? `<p class="reserved-by">\u{1F64B} ${reservers.map(r => esc(r)).join(', ')}</p>` : ''}
+            ${reserverAnimals.length > 0 ? `<p class="reserved-by">${reserverAnimals.map(r => esc(r)).join(', ')}</p>` : ''}
             <div class="card-actions">
               <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo \u{1F64B}</button>
               ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver \u2197</a>` : ''}
@@ -1098,7 +1130,7 @@ function renderGuest() {
           <div class="card-body">
             <p class="card-name">${esc(g.name)}</p>
             <p class="card-price">${formatPrice(g.price)}</p>
-            <p class="reserved-by">por ${esc(g.reservedBy)}</p>
+            <p class="reserved-by">por ${esc(g.reservedByAnimal || g.reservedBy)}</p>
           </div>
         </div>`;
     });
@@ -1204,11 +1236,12 @@ function renderAdmin() {
     all.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
       const hasReservers = g.reservedBy || reservers.length > 0;
+      const adminReservers = reservers.map(r => typeof r === 'object' ? `${r.name} (${r.animal})` : r);
       html += `
         <div class="admin-row">
           <div class="info">
             <p>${esc(g.name)}${g.unlimited ? ' <span style="font-size:11px;color:var(--success);font-weight:600">\u221E</span>' : ''}</p>
-            <p>${formatPrice(g.price)}${g.reservedBy && !g.unlimited ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}</span>` : ''}${reservers.length > 0 ? `<span class="reserved-link">\u2192 ${reservers.map(r => esc(r)).join(', ')}</span>` : ''}</p>
+            <p>${formatPrice(g.price)}${g.reservedBy && !g.unlimited ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}${g.reservedByAnimal ? ' (' + esc(g.reservedByAnimal) + ')' : ''}</span>` : ''}${adminReservers.length > 0 ? `<span class="reserved-link">\u2192 ${adminReservers.map(r => esc(r)).join(', ')}</span>` : ''}</p>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
           ${hasReservers ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
@@ -1366,14 +1399,15 @@ function reserveGift(id) {
   const lastname = document.getElementById("guest-lastname").value.trim();
   if (!name || !lastname) return notify("Ingresa tu nombre y apellido", "error");
   const fullName = name + " " + lastname;
+  const animal = pickAnimalName();
   const gift = gifts[id];
   if (gift && gift.unlimited) {
-    dbGifts.child(id).child("reservedByList").push(fullName);
+    dbGifts.child(id).child("reservedByList").push({ name: fullName, animal: animal });
   } else {
-    dbGifts.child(id).update({ reservedBy: fullName });
+    dbGifts.child(id).update({ reservedBy: fullName, reservedByAnimal: animal });
   }
   closeModal();
-  notify("Regalo reservado a tu nombre");
+  notify("Reservado como " + animal);
 }
 
 function unreserve(id) {
@@ -1381,7 +1415,7 @@ function unreserve(id) {
   if (gift && gift.unlimited) {
     dbGifts.child(id).child("reservedByList").remove();
   } else {
-    dbGifts.child(id).update({ reservedBy: null });
+    dbGifts.child(id).update({ reservedBy: null, reservedByAnimal: null });
   }
   notify("Reserva cancelada");
 }
