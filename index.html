@@ -449,6 +449,58 @@
   .admin-row .info .reserved-link { margin-left: 8px; color: var(--primary); font-weight: 600; }
   .admin-list { padding: 0 20px 40px; }
 
+  /* ADMIN STATS */
+  .admin-stats-card {
+    background: var(--card-bg);
+    margin: 20px;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .admin-stats-card h3 { font-size: 16px; margin-bottom: 16px; color: var(--text); }
+  .admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+  }
+  .admin-stat-item { text-align: center; }
+  .admin-stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.2;
+  }
+  .admin-stat-desc {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .admin-progress {
+    height: 8px;
+    background: var(--primary-light);
+    border-radius: 4px;
+    margin-top: 20px;
+    overflow: hidden;
+  }
+  .admin-progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    min-width: 2px;
+  }
+  .admin-progress-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    text-align: center;
+  }
+
   /* SETTINGS */
   .settings-section {
     background: var(--card-bg);
@@ -1343,6 +1395,69 @@ function renderAdmin() {
         </div>
       </div>
     </div>
+    ${(() => {
+      const totalGifts = all.length;
+      const reservedGifts = all.filter(g => g.reservedBy && !g.unlimited).length;
+      const unreservedGifts = all.filter(g => !g.reservedBy && !g.unlimited).length;
+      const unlimitedGifts = all.filter(g => g.unlimited).length;
+      let unlimitedReservations = 0;
+      all.filter(g => g.unlimited && g.reservedByList).forEach(g => unlimitedReservations += Object.keys(g.reservedByList).length);
+      const totalValue = all.reduce((s, g) => s + (Number(g.price) || 0), 0);
+      const reservedValue = all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
+      const unlimitedValue = all.filter(g => g.unlimited && g.reservedByList).reduce((s, g) => s + (Number(g.price) || 0) * Object.keys(g.reservedByList).length, 0);
+      const committedValue = reservedValue + unlimitedValue;
+      const pendingValue = totalValue - all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
+      const pct = totalGifts > 0 ? Math.round((reservedGifts / (totalGifts - unlimitedGifts || 1)) * 100) : 0;
+      const uniquePeople = new Set();
+      all.forEach(g => {
+        if (g.reservedBy && !g.unlimited) uniquePeople.add(g.reservedBy);
+        if (g.reservedByList) Object.values(g.reservedByList).forEach(r => uniquePeople.add(typeof r === 'object' ? r.name : r));
+      });
+      return `
+    <div class="admin-stats-card">
+      <h3>\u{1F4CA} Resumen</h3>
+      <div class="admin-stats-grid">
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${totalGifts}</span>
+          <span class="admin-stat-desc">Regalos totales</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${reservedGifts}/${totalGifts - unlimitedGifts}</span>
+          <span class="admin-stat-desc">Reservados (${pct}%)</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${unreservedGifts}</span>
+          <span class="admin-stat-desc">Pendientes</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${uniquePeople.size}</span>
+          <span class="admin-stat-desc">Personas</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(committedValue)}</span>
+          <span class="admin-stat-desc">Comprometido</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(pendingValue)}</span>
+          <span class="admin-stat-desc">Por cubrir</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(totalValue)}</span>
+          <span class="admin-stat-desc">Valor total lista</span>
+        </div>
+        ${unlimitedGifts > 0 ? `
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${unlimitedReservations}</span>
+          <span class="admin-stat-desc">Reservas ilimitados</span>
+        </div>` : ''}
+      </div>
+      ${totalGifts - unlimitedGifts > 0 ? `
+      <div class="admin-progress">
+        <div class="admin-progress-bar" style="width:${pct}%"></div>
+      </div>
+      <p class="admin-progress-label">${pct}% de los regalos reservados</p>` : ''}
+    </div>`;
+    })()}
     <p class="section-title">Regalos (${all.length})</p>
     <div class="admin-list">
   `;
