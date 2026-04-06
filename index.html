@@ -455,6 +455,33 @@
   .admin-row .info .reserved-link { margin-left: 8px; color: var(--primary); font-weight: 600; }
   .admin-list { padding: 0 20px 40px; }
 
+  /* ADMIN TABS */
+  .admin-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 20px;
+    margin-top: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .admin-tabs button {
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+  }
+  .admin-tabs button:hover { color: var(--text); }
+  .admin-tabs button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
   /* ADMIN STATS */
   .admin-stats-card {
     background: var(--card-bg);
@@ -505,6 +532,45 @@
     color: var(--text-secondary);
     margin-top: 6px;
     text-align: center;
+  }
+  .admin-chart-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  /* BAR CHART */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label {
+    width: 80px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 24px;
+    background: var(--primary-light);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 6px;
+    min-width: 2px;
+    transition: width 0.5s ease;
+  }
+  .bar-value {
+    width: 28px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    flex-shrink: 0;
   }
 
   /* SETTINGS */
@@ -937,6 +1003,7 @@ let notifTimer = null;
 let dataLoaded = false;
 let viewMode = localStorage.getItem('viewMode') || 'grid-lg';
 let sortMode = localStorage.getItem('sortMode') || 'default';
+let adminTab = 'gifts';
 
 // --- HELPERS ---
 async function hashPin(pin) {
@@ -1318,11 +1385,240 @@ function renderGuest() {
   return html;
 }
 
+function switchAdminTab(tab) { adminTab = tab; render(); }
+
 function renderAdmin() {
   const all = giftList();
   const editing = editingId ? gifts[editingId] : null;
 
   let html = `
+    <div class="admin-tabs">
+      <button class="${adminTab === 'gifts' ? 'active' : ''}" onclick="switchAdminTab('gifts')">\u{1F381} Regalos</button>
+      <button class="${adminTab === 'analytics' ? 'active' : ''}" onclick="switchAdminTab('analytics')">\u{1F4CA} Analisis</button>
+      <button class="${adminTab === 'settings' ? 'active' : ''}" onclick="switchAdminTab('settings')">\u2699\uFE0F Ajustes</button>
+    </div>
+  `;
+
+  if (adminTab === 'gifts') {
+    html += renderAdminGifts(all, editing);
+  } else if (adminTab === 'analytics') {
+    html += renderAdminAnalytics(all);
+  } else {
+    html += renderAdminSettings();
+  }
+  return html;
+}
+
+function renderAdminGifts(all, editing) {
+  let html = `
+    <div class="admin-form">
+      <h3>${editing ? '\u270F\uFE0F Editar regalo' : '\u2795 Agregar regalo'}</h3>
+      <div class="form-grid">
+        <div><label class="field-label">Nombre del regalo *</label><input class="input" id="f-name" placeholder="Ej: Coche, Cuna, Ropa..." value="${editing ? esc(editing.name) : ''}"></div>
+        <div><label class="field-label">URL de la imagen</label><input class="input" id="f-image" placeholder="https://..." value="${editing ? esc(editing.image || '') : ''}"></div>
+        <div><label class="field-label">Link de compra</label><input class="input" id="f-link" placeholder="https://..." value="${editing ? esc(editing.link || '') : ''}"></div>
+        <div><label class="field-label">Precio (CLP) *</label><input class="input" id="f-price" placeholder="Ej: 29990" type="number" value="${editing ? editing.price : ''}"></div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text-secondary)">
+          <input type="checkbox" id="f-unlimited" ${editing && editing.unlimited ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)">
+          Permite multiples reservas (ropa, calcetines, etc.)
+        </label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveGift()">${editing ? 'Guardar cambios' : 'Agregar'}</button>
+          ${editing ? '<button class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>' : ''}
+        </div>
+      </div>
+    </div>
+    <p class="section-title">Regalos (${all.length})</p>
+    <div class="admin-list">
+  `;
+  if (all.length === 0) {
+    html += '<div class="empty">Agrega el primer regalo arriba</div>';
+  } else {
+    all.forEach(g => {
+      const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
+      const hasReservers = g.reservedBy || reservers.length > 0;
+      const adminReservers = reservers.map(r => typeof r === 'object' ? `${r.name} (${r.animal})` : r);
+      html += `
+        <div class="admin-row">
+          <div class="info">
+            <p>${esc(g.name)}${g.unlimited ? ' <span style="font-size:11px;color:var(--success);font-weight:600">\u221E</span>' : ''}</p>
+            <p>${formatPrice(g.price)}${g.reservedBy && !g.unlimited ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}${g.reservedByAnimal ? ' (' + esc(g.reservedByAnimal) + ')' : ''}</span>` : ''}${adminReservers.length > 0 ? `<span class="reserved-link">\u2192 ${adminReservers.map(r => esc(r)).join(', ')}</span>` : ''}</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
+          ${hasReservers ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">\u2715</button>
+        </div>`;
+    });
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderAdminAnalytics(all) {
+  const totalGifts = all.length;
+  const reservedGifts = all.filter(g => g.reservedBy && !g.unlimited).length;
+  const unreservedGifts = all.filter(g => !g.reservedBy && !g.unlimited).length;
+  const unlimitedGifts = all.filter(g => g.unlimited).length;
+  let unlimitedReservations = 0;
+  all.filter(g => g.unlimited && g.reservedByList).forEach(g => unlimitedReservations += Object.keys(g.reservedByList).length);
+  const totalValue = all.reduce((s, g) => s + (Number(g.price) || 0), 0);
+  const reservedValue = all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
+  const unlimitedValue = all.filter(g => g.unlimited && g.reservedByList).reduce((s, g) => s + (Number(g.price) || 0) * Object.keys(g.reservedByList).length, 0);
+  const committedValue = reservedValue + unlimitedValue;
+  const pendingValue = totalValue - reservedValue;
+  const normalGifts = totalGifts - unlimitedGifts;
+  const pct = normalGifts > 0 ? Math.round((reservedGifts / normalGifts) * 100) : 0;
+  const pctValue = totalValue > 0 ? Math.round((reservedValue / totalValue) * 100) : 0;
+
+  const uniquePeople = new Map();
+  all.forEach(g => {
+    if (g.reservedBy && !g.unlimited) {
+      const key = g.reservedBy;
+      if (!uniquePeople.has(key)) uniquePeople.set(key, { name: key, animal: g.reservedByAnimal || '', count: 0, total: 0 });
+      const p = uniquePeople.get(key);
+      p.count++;
+      p.total += Number(g.price) || 0;
+    }
+    if (g.reservedByList) {
+      Object.values(g.reservedByList).forEach(r => {
+        const name = typeof r === 'object' ? r.name : r;
+        const animal = typeof r === 'object' ? r.animal : '';
+        if (!uniquePeople.has(name)) uniquePeople.set(name, { name, animal, count: 0, total: 0 });
+        const p = uniquePeople.get(name);
+        p.count++;
+        p.total += Number(g.price) || 0;
+      });
+    }
+  });
+  const people = [...uniquePeople.values()].sort((a, b) => b.total - a.total);
+
+  // Price distribution for bar chart
+  const priceRanges = [
+    { label: '< $50k', max: 50000 },
+    { label: '$50-100k', max: 100000 },
+    { label: '$100-200k', max: 200000 },
+    { label: '$200-500k', max: 500000 },
+    { label: '> $500k', max: Infinity },
+  ];
+  const priceDist = priceRanges.map(r => ({ ...r, count: 0 }));
+  all.forEach(g => {
+    const p = Number(g.price) || 0;
+    let prev = 0;
+    for (const bucket of priceDist) {
+      if (p > prev && p <= bucket.max) { bucket.count++; break; }
+      prev = bucket.max;
+    }
+  });
+  const maxBucket = Math.max(...priceDist.map(b => b.count), 1);
+
+  // Top 5 most expensive
+  const topExpensive = [...all].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0)).slice(0, 5);
+
+  return `
+    <div class="admin-stats-card">
+      <h3>\u{1F4CA} Resumen general</h3>
+      <div class="admin-stats-grid">
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${totalGifts}</span>
+          <span class="admin-stat-desc">Regalos</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${reservedGifts}/${normalGifts}</span>
+          <span class="admin-stat-desc">Reservados</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${people.length}</span>
+          <span class="admin-stat-desc">Personas</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(committedValue)}</span>
+          <span class="admin-stat-desc">Comprometido</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(pendingValue)}</span>
+          <span class="admin-stat-desc">Por cubrir</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(totalValue)}</span>
+          <span class="admin-stat-desc">Valor total</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:20px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <p class="admin-chart-label">Regalos (${pct}%)</p>
+          <div class="admin-progress"><div class="admin-progress-bar" style="width:${pct}%"></div></div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <p class="admin-chart-label">Valor (${pctValue}%)</p>
+          <div class="admin-progress"><div class="admin-progress-bar" style="width:${pctValue}%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-stats-card">
+      <h3>\u{1F4CA} Regalos por rango de precio</h3>
+      <div class="bar-chart">
+        ${priceDist.map(b => `
+          <div class="bar-row">
+            <span class="bar-label">${b.label}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${(b.count / maxBucket) * 100}%"></div>
+            </div>
+            <span class="bar-value">${b.count}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:20px;padding:0 20px;flex-wrap:wrap">
+      <div class="admin-stats-card" style="flex:1;min-width:280px;margin:0">
+        <h3>\u{1F3C6} Top 5 mas caros</h3>
+        ${topExpensive.map((g, i) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i < topExpensive.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+            <span style="font-size:14px;font-weight:500">${esc(g.name)}</span>
+            <span style="font-weight:700;color:var(--primary);white-space:nowrap;margin-left:12px">${formatPrice(g.price)}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="admin-stats-card" style="flex:1;min-width:280px;margin:0">
+        <h3>\u{1F465} Personas (${people.length})</h3>
+        ${people.length === 0 ? '<p style="color:var(--text-secondary);font-size:14px">Aun no hay reservas</p>' :
+        people.map((p, i) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i < people.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+            <div>
+              <span style="font-size:14px;font-weight:500">${esc(p.name)}</span>
+              ${p.animal ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:6px">${esc(p.animal)}</span>` : ''}
+            </div>
+            <div style="text-align:right;white-space:nowrap;margin-left:12px">
+              <span style="font-weight:700;color:var(--primary)">${p.count}</span>
+              <span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${formatPrice(p.total)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    ${unlimitedGifts > 0 ? `
+    <div class="admin-stats-card" style="margin-top:20px">
+      <h3>\u221E Regalos ilimitados (${unlimitedGifts})</h3>
+      ${all.filter(g => g.unlimited).map(g => {
+        const rlist = g.reservedByList ? Object.values(g.reservedByList) : [];
+        return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:600">${esc(g.name)}</span>
+              <span style="font-weight:700;color:var(--primary)">${rlist.length} reservas</span>
+            </div>
+            ${rlist.length > 0 ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:4px">${rlist.map(r => esc(typeof r === 'object' ? r.name + ' (' + r.animal + ')' : r)).join(', ')}</p>` : ''}
+          </div>`;
+      }).join('')}
+    </div>` : ''}
+  `;
+}
+
+function renderAdminSettings() {
+  return `
     <div class="settings-section">
       <h3>\u2699\uFE0F Personalizar</h3>
       <div class="setting-group">
@@ -1385,114 +1681,7 @@ function renderAdmin() {
         <button class="btn btn-danger" onclick="showDeleteSessionModal()">Eliminar este Beibi Shower</button>
       </div>
     </div>
-
-    <div class="admin-form">
-      <h3>${editing ? '\u270F\uFE0F Editar regalo' : '\u2795 Agregar regalo'}</h3>
-      <div class="form-grid">
-        <div><label class="field-label">Nombre del regalo *</label><input class="input" id="f-name" placeholder="Ej: Coche, Cuna, Ropa..." value="${editing ? esc(editing.name) : ''}"></div>
-        <div><label class="field-label">URL de la imagen</label><input class="input" id="f-image" placeholder="https://..." value="${editing ? esc(editing.image || '') : ''}"></div>
-        <div><label class="field-label">Link de compra</label><input class="input" id="f-link" placeholder="https://..." value="${editing ? esc(editing.link || '') : ''}"></div>
-        <div><label class="field-label">Precio (CLP) *</label><input class="input" id="f-price" placeholder="Ej: 29990" type="number" value="${editing ? editing.price : ''}"></div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text-secondary)">
-          <input type="checkbox" id="f-unlimited" ${editing && editing.unlimited ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--primary)">
-          Permite multiples reservas (ropa, calcetines, etc.)
-        </label>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-primary" onclick="saveGift()">
-            ${editing ? 'Guardar cambios' : 'Agregar'}
-          </button>
-          ${editing ? '<button class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>' : ''}
-        </div>
-      </div>
-    </div>
-    ${(() => {
-      const totalGifts = all.length;
-      const reservedGifts = all.filter(g => g.reservedBy && !g.unlimited).length;
-      const unreservedGifts = all.filter(g => !g.reservedBy && !g.unlimited).length;
-      const unlimitedGifts = all.filter(g => g.unlimited).length;
-      let unlimitedReservations = 0;
-      all.filter(g => g.unlimited && g.reservedByList).forEach(g => unlimitedReservations += Object.keys(g.reservedByList).length);
-      const totalValue = all.reduce((s, g) => s + (Number(g.price) || 0), 0);
-      const reservedValue = all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
-      const unlimitedValue = all.filter(g => g.unlimited && g.reservedByList).reduce((s, g) => s + (Number(g.price) || 0) * Object.keys(g.reservedByList).length, 0);
-      const committedValue = reservedValue + unlimitedValue;
-      const pendingValue = totalValue - all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
-      const pct = totalGifts > 0 ? Math.round((reservedGifts / (totalGifts - unlimitedGifts || 1)) * 100) : 0;
-      const uniquePeople = new Set();
-      all.forEach(g => {
-        if (g.reservedBy && !g.unlimited) uniquePeople.add(g.reservedBy);
-        if (g.reservedByList) Object.values(g.reservedByList).forEach(r => uniquePeople.add(typeof r === 'object' ? r.name : r));
-      });
-      return `
-    <div class="admin-stats-card">
-      <h3>\u{1F4CA} Resumen</h3>
-      <div class="admin-stats-grid">
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${totalGifts}</span>
-          <span class="admin-stat-desc">Regalos totales</span>
-        </div>
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${reservedGifts}/${totalGifts - unlimitedGifts}</span>
-          <span class="admin-stat-desc">Reservados (${pct}%)</span>
-        </div>
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${unreservedGifts}</span>
-          <span class="admin-stat-desc">Pendientes</span>
-        </div>
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${uniquePeople.size}</span>
-          <span class="admin-stat-desc">Personas</span>
-        </div>
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${formatPrice(committedValue)}</span>
-          <span class="admin-stat-desc">Comprometido</span>
-        </div>
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${formatPrice(pendingValue)}</span>
-          <span class="admin-stat-desc">Por cubrir</span>
-        </div>
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${formatPrice(totalValue)}</span>
-          <span class="admin-stat-desc">Valor total lista</span>
-        </div>
-        ${unlimitedGifts > 0 ? `
-        <div class="admin-stat-item">
-          <span class="admin-stat-value">${unlimitedReservations}</span>
-          <span class="admin-stat-desc">Reservas ilimitados</span>
-        </div>` : ''}
-      </div>
-      ${totalGifts - unlimitedGifts > 0 ? `
-      <div class="admin-progress">
-        <div class="admin-progress-bar" style="width:${pct}%"></div>
-      </div>
-      <p class="admin-progress-label">${pct}% de los regalos reservados</p>` : ''}
-    </div>`;
-    })()}
-    <p class="section-title">Regalos (${all.length})</p>
-    <div class="admin-list">
   `;
-
-  if (all.length === 0) {
-    html += '<div class="empty">Agrega el primer regalo arriba</div>';
-  } else {
-    all.forEach(g => {
-      const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
-      const hasReservers = g.reservedBy || reservers.length > 0;
-      const adminReservers = reservers.map(r => typeof r === 'object' ? `${r.name} (${r.animal})` : r);
-      html += `
-        <div class="admin-row">
-          <div class="info">
-            <p>${esc(g.name)}${g.unlimited ? ' <span style="font-size:11px;color:var(--success);font-weight:600">\u221E</span>' : ''}</p>
-            <p>${formatPrice(g.price)}${g.reservedBy && !g.unlimited ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}${g.reservedByAnimal ? ' (' + esc(g.reservedByAnimal) + ')' : ''}</span>` : ''}${adminReservers.length > 0 ? `<span class="reserved-link">\u2192 ${adminReservers.map(r => esc(r)).join(', ')}</span>` : ''}</p>
-          </div>
-          <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
-          ${hasReservers ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">\u2715</button>
-        </div>`;
-    });
-  }
-  html += `</div>`;
-  return html;
 }
 
 // --- ACTIONS ---
