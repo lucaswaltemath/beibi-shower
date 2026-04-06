@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #7c6ca8;
+    --primary: #4a4a4a;
     --primary-light: #ede8f5;
     --primary-dark: #5a4d80;
     --accent: #f5a623;
@@ -724,7 +724,7 @@ const BABY_EMOJIS = [
 
 const DEFAULT_SETTINGS = {
   babyName: '',
-  customColor: '#7c6ca8',
+  customColor: '#4a4a4a',
   babyEmoji: '\u{1F476}',
 };
 
@@ -806,7 +806,7 @@ function hslToHex(h, s, l) {
 }
 
 function applyTheme(hex) {
-  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) hex = '#7c6ca8';
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) hex = '#4a4a4a';
   const [h, s, l] = hexToHSL(hex);
   const root = document.documentElement.style;
   root.setProperty('--primary', hex);
@@ -859,7 +859,7 @@ async function migrateIfNeeded() {
   const updates = {};
   if (oldGifts.val()) updates["sessions/kai/gifts"] = oldGifts.val();
   if (oldSettings.val()) updates["sessions/kai/settings"] = oldSettings.val();
-  else updates["sessions/kai/settings"] = { babyName: 'Kai', customColor: '#7c6ca8', babyEmoji: '\u{1F476}' };
+  else updates["sessions/kai/settings"] = { babyName: 'Kai', customColor: '#4a4a4a', babyEmoji: '\u{1F476}' };
   if (oldAdmin.val()) updates["sessions/kai/admin"] = oldAdmin.val();
 
   await db.ref().update(updates);
@@ -988,7 +988,7 @@ async function createSession() {
   // Create session
   await db.ref(`sessions/${finalSlug}/settings`).set({
     babyName: name,
-    customColor: '#7c6ca8',
+    customColor: '#4a4a4a',
     babyEmoji: '\u{1F476}',
   });
 
@@ -1136,10 +1136,10 @@ function renderAdmin() {
         <div class="setting-label">Color del tema</div>
         <div class="color-picker-row">
           <div class="color-picker-hex">
-            <div class="color-preview" style="background:${appSettings.customColor || '#7c6ca8'}">
-              <input type="color" id="s-color-native" value="${appSettings.customColor || '#7c6ca8'}" onchange="onColorPick(this.value)">
+            <div class="color-preview" style="background:${appSettings.customColor || '#4a4a4a'}">
+              <input type="color" id="s-color-native" value="${appSettings.customColor || '#4a4a4a'}" onchange="onColorPick(this.value)">
             </div>
-            <input class="input hex-input" id="s-color-hex" placeholder="#7c6ca8" value="${appSettings.customColor || '#7c6ca8'}" maxlength="7"
+            <input class="input hex-input" id="s-color-hex" placeholder="#4a4a4a" value="${appSettings.customColor || '#4a4a4a'}" maxlength="7"
               onkeydown="if(event.key==='Enter')applyHexColor()">
             <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="applyHexColor()">Aplicar</button>
           </div>
@@ -1159,6 +1159,10 @@ function renderAdmin() {
           <input class="input" id="s-new-pin-confirm" type="password" placeholder="Confirmar" maxlength="6" style="flex:1">
           <button class="btn btn-primary" style="width:auto;white-space:nowrap" onclick="changePin()">Cambiar</button>
         </div>
+      </div>
+      <div class="setting-group" style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border)">
+        <div class="setting-label" style="color:var(--danger)">Zona peligrosa</div>
+        <button class="btn btn-danger" onclick="showDeleteSessionModal()">Eliminar este Beibi Shower</button>
       </div>
     </div>
 
@@ -1402,12 +1406,34 @@ function onColorPick(hex) {
 function applyHexColor() {
   let hex = document.getElementById("s-color-hex").value.trim();
   if (!hex.startsWith('#')) hex = '#' + hex;
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return notify("Ingresa un color hex valido (ej: #7c6ca8)", "error");
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return notify("Ingresa un color hex valido (ej: #4a4a4a)", "error");
   const nativePicker = document.getElementById("s-color-native");
   if (nativePicker) nativePicker.value = hex;
   applyTheme(hex);
   dbSettings.update({ customColor: hex });
   notify("Color actualizado");
+}
+
+function showDeleteSessionModal() {
+  showModal(`
+    <h3>\u26A0\uFE0F Eliminar Beibi Shower</h3>
+    <p class="sub">Esto eliminara todos los regalos, reservas y configuracion de este baby shower. Esta accion no se puede deshacer.</p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Escribe <strong>${esc(appSettings.babyName)}</strong> para confirmar:</p>
+    <input class="input" id="delete-confirm" placeholder="Nombre del bebe" autofocus>
+    <div class="btn-row">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;background:var(--danger)" onclick="deleteSession()">Eliminar</button>
+    </div>
+  `);
+  setTimeout(() => { const el = document.getElementById("delete-confirm"); if (el) el.focus(); }, 100);
+}
+
+async function deleteSession() {
+  const confirm = document.getElementById("delete-confirm").value.trim();
+  if (confirm !== appSettings.babyName) return notify("El nombre no coincide", "error");
+  await db.ref("sessions/" + sessionId).remove();
+  closeModal();
+  window.location.search = '';
 }
 
 function copyShareLink() {
