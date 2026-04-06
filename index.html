@@ -201,21 +201,23 @@
     display: flex;
     gap: 4px;
   }
-  .view-btn {
-    width: 34px;
-    height: 34px;
+  .view-btn-label {
+    padding: 6px 12px;
     border-radius: var(--radius-sm);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 5px;
     background: transparent;
     color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
     transition: all 0.2s;
   }
-  .view-btn:hover { background: var(--primary-light); color: var(--primary); }
-  .view-btn.active { background: var(--primary-light); color: var(--primary); }
+  .view-btn-label:hover { background: var(--primary-light); color: var(--primary); }
+  .view-btn-label.active { background: var(--primary-light); color: var(--primary); }
 
   /* GRID */
   .section-title {
@@ -236,18 +238,9 @@
     background: var(--border);
   }
 
-  .grid {
+  .grid, .grid-lg {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-    padding: 8px 20px 20px;
-  }
-  .grid .card img { height: 160px; }
-  .grid .card .placeholder { height: 160px; font-size: 36px; }
-
-  .grid-lg {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
     gap: 18px;
     padding: 8px 20px 20px;
   }
@@ -1249,14 +1242,13 @@ function render() {
           <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>A - Z</option>
         </select>
         <div class="view-toggle">
-          <button class="view-btn ${viewMode === 'grid-lg' ? 'active' : ''}" onclick="setViewMode('grid-lg')" title="Tarjetas grandes">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+          <button class="view-btn-label ${viewMode === 'grid-lg' ? 'active' : ''}" onclick="setViewMode('grid-lg')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+            Tarjetas
           </button>
-          <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Tarjetas">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="4.5" height="4.5" rx="1"/><rect x="5.75" y="0" width="4.5" height="4.5" rx="1"/><rect x="11.5" y="0" width="4.5" height="4.5" rx="1"/><rect x="0" y="5.75" width="4.5" height="4.5" rx="1"/><rect x="5.75" y="5.75" width="4.5" height="4.5" rx="1"/><rect x="11.5" y="5.75" width="4.5" height="4.5" rx="1"/><rect x="0" y="11.5" width="4.5" height="4.5" rx="1"/><rect x="5.75" y="11.5" width="4.5" height="4.5" rx="1"/><rect x="11.5" y="11.5" width="4.5" height="4.5" rx="1"/></svg>
-          </button>
-          <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')" title="Lista">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
+          <button class="view-btn-label ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
+            Lista
           </button>
         </div>
       </div>
