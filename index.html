@@ -176,6 +176,47 @@
     box-shadow: 0 3px 10px rgba(124,108,168,0.3);
   }
 
+  /* VIEW CONTROLS */
+  .view-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+  }
+  .sort-select {
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    cursor: pointer;
+    outline: none;
+  }
+  .sort-select:focus { border-color: var(--primary); }
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+  }
+  .view-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .view-btn:hover { background: var(--primary-light); color: var(--primary); }
+  .view-btn.active { background: var(--primary-light); color: var(--primary); }
+
   /* GRID */
   .section-title {
     font-size: 12px;
@@ -270,6 +311,44 @@
     margin-top: 4px;
     font-style: italic;
   }
+  /* LIST VIEW */
+  .list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 20px 20px;
+  }
+  .list-view .card {
+    display: flex;
+    flex-direction: row;
+    border-radius: var(--radius-sm);
+  }
+  .list-view .card img {
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  }
+  .list-view .card .placeholder {
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+    font-size: 28px;
+  }
+  .list-view .card-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 12px 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  .list-view .card-name { flex: 1; min-width: 120px; margin-bottom: 0; }
+  .list-view .card-price { margin: 0; font-size: 16px; }
+  .list-view .card-actions { margin-top: 0; }
+  .list-view .badge { top: 8px; right: 8px; font-size: 10px; padding: 3px 8px; }
+
   .card-reservers-count {
     font-size: 12px;
     vertical-align: middle;
@@ -369,6 +448,58 @@
   .admin-row .info p:last-child { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
   .admin-row .info .reserved-link { margin-left: 8px; color: var(--primary); font-weight: 600; }
   .admin-list { padding: 0 20px 40px; }
+
+  /* ADMIN STATS */
+  .admin-stats-card {
+    background: var(--card-bg);
+    margin: 20px;
+    border-radius: var(--radius-md);
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .admin-stats-card h3 { font-size: 16px; margin-bottom: 16px; color: var(--text); }
+  .admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+  }
+  .admin-stat-item { text-align: center; }
+  .admin-stat-value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.2;
+  }
+  .admin-stat-desc {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .admin-progress {
+    height: 8px;
+    background: var(--primary-light);
+    border-radius: 4px;
+    margin-top: 20px;
+    overflow: hidden;
+  }
+  .admin-progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    min-width: 2px;
+  }
+  .admin-progress-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    text-align: center;
+  }
 
   /* SETTINGS */
   .settings-section {
@@ -798,6 +929,8 @@ let currentView = "guest";
 let editingId = null;
 let notifTimer = null;
 let dataLoaded = false;
+let viewMode = localStorage.getItem('viewMode') || 'grid';
+let sortMode = localStorage.getItem('sortMode') || 'default';
 
 // --- HELPERS ---
 async function hashPin(pin) {
@@ -1075,31 +1208,22 @@ function render() {
       </div>
       <div class="subtitle">Lista de regalos</div>
     </div>
-    ${currentView === 'guest' && total > 0 ? (() => {
-      let reservedCount = res.length;
-      let reservedMoney = 0;
-      res.forEach(g => reservedMoney += Number(g.price) || 0);
-      giftList().filter(g => g.unlimited && g.reservedByList).forEach(g => {
-        const c = Object.keys(g.reservedByList).length;
-        reservedCount += c;
-        reservedMoney += (Number(g.price) || 0) * c;
-      });
-      return `
+    ${currentView === 'guest' && total > 0 ? `
     <div class="stats">
       <div class="stat">
         <div class="stat-number">${av.length}</div>
         <div class="stat-label">Disponibles</div>
       </div>
       <div class="stat">
-        <div class="stat-number">${reservedCount}</div>
+        <div class="stat-number">${res.length}</div>
         <div class="stat-label">Reservados</div>
       </div>
       <div class="stat">
-        <div class="stat-number">${formatPrice(reservedMoney)}</div>
-        <div class="stat-label">Comprometido</div>
+        <div class="stat-number">${total}</div>
+        <div class="stat-label">Total</div>
       </div>
-    </div>`;
-    })() : ''}
+    </div>
+    ` : ''}
     <div class="nav">
       <button class="${currentView === 'guest' ? 'active' : ''}" onclick="switchView('guest')">
         \u{1F381} Regalos
@@ -1107,6 +1231,24 @@ function render() {
       <button class="${currentView === 'admin' ? 'active' : ''}" onclick="${currentView === 'admin' ? '' : 'showPinModal()'}">
         \u{1F512} Admin
       </button>
+      ${currentView === 'guest' ? `
+      <div class="view-controls">
+        <select class="sort-select" onchange="setSortMode(this.value)">
+          <option value="default" ${sortMode === 'default' ? 'selected' : ''}>Orden original</option>
+          <option value="price-asc" ${sortMode === 'price-asc' ? 'selected' : ''}>Precio: menor a mayor</option>
+          <option value="price-desc" ${sortMode === 'price-desc' ? 'selected' : ''}>Precio: mayor a menor</option>
+          <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>A - Z</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Grilla">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')" title="Lista">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+      ` : ''}
     </div>
     <div id="content">
       ${currentView === "guest" ? renderGuest() : renderAdmin()}
@@ -1119,13 +1261,13 @@ function render() {
 }
 
 function renderGuest() {
-  const av = available();
-  const res = reserved();
+  const av = sortGifts(available());
+  const res = sortGifts(reserved());
   if (giftList().length === 0) return '<div class="empty">\u{1F381} Aun no hay regalos en la lista</div>';
 
   let html = "";
   if (av.length > 0) {
-    html += `<p class="section-title">Disponibles</p><div class="grid">`;
+    html += `<p class="section-title">Disponibles</p><div class="${viewMode === 'list' ? 'list-view' : 'grid'}">`;
     av.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
       const count = reservers.length;
@@ -1147,7 +1289,7 @@ function renderGuest() {
     html += `</div>`;
   }
   if (res.length > 0) {
-    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="grid">`;
+    html += `<p class="section-title">Ya reservados (${res.length})</p><div class="${viewMode === 'list' ? 'list-view' : 'grid'}">`;
     res.forEach(g => {
       html += `
         <div class="card reserved">
@@ -1253,6 +1395,69 @@ function renderAdmin() {
         </div>
       </div>
     </div>
+    ${(() => {
+      const totalGifts = all.length;
+      const reservedGifts = all.filter(g => g.reservedBy && !g.unlimited).length;
+      const unreservedGifts = all.filter(g => !g.reservedBy && !g.unlimited).length;
+      const unlimitedGifts = all.filter(g => g.unlimited).length;
+      let unlimitedReservations = 0;
+      all.filter(g => g.unlimited && g.reservedByList).forEach(g => unlimitedReservations += Object.keys(g.reservedByList).length);
+      const totalValue = all.reduce((s, g) => s + (Number(g.price) || 0), 0);
+      const reservedValue = all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
+      const unlimitedValue = all.filter(g => g.unlimited && g.reservedByList).reduce((s, g) => s + (Number(g.price) || 0) * Object.keys(g.reservedByList).length, 0);
+      const committedValue = reservedValue + unlimitedValue;
+      const pendingValue = totalValue - all.filter(g => g.reservedBy && !g.unlimited).reduce((s, g) => s + (Number(g.price) || 0), 0);
+      const pct = totalGifts > 0 ? Math.round((reservedGifts / (totalGifts - unlimitedGifts || 1)) * 100) : 0;
+      const uniquePeople = new Set();
+      all.forEach(g => {
+        if (g.reservedBy && !g.unlimited) uniquePeople.add(g.reservedBy);
+        if (g.reservedByList) Object.values(g.reservedByList).forEach(r => uniquePeople.add(typeof r === 'object' ? r.name : r));
+      });
+      return `
+    <div class="admin-stats-card">
+      <h3>\u{1F4CA} Resumen</h3>
+      <div class="admin-stats-grid">
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${totalGifts}</span>
+          <span class="admin-stat-desc">Regalos totales</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${reservedGifts}/${totalGifts - unlimitedGifts}</span>
+          <span class="admin-stat-desc">Reservados (${pct}%)</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${unreservedGifts}</span>
+          <span class="admin-stat-desc">Pendientes</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${uniquePeople.size}</span>
+          <span class="admin-stat-desc">Personas</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(committedValue)}</span>
+          <span class="admin-stat-desc">Comprometido</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(pendingValue)}</span>
+          <span class="admin-stat-desc">Por cubrir</span>
+        </div>
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${formatPrice(totalValue)}</span>
+          <span class="admin-stat-desc">Valor total lista</span>
+        </div>
+        ${unlimitedGifts > 0 ? `
+        <div class="admin-stat-item">
+          <span class="admin-stat-value">${unlimitedReservations}</span>
+          <span class="admin-stat-desc">Reservas ilimitados</span>
+        </div>` : ''}
+      </div>
+      ${totalGifts - unlimitedGifts > 0 ? `
+      <div class="admin-progress">
+        <div class="admin-progress-bar" style="width:${pct}%"></div>
+      </div>
+      <p class="admin-progress-label">${pct}% de los regalos reservados</p>` : ''}
+    </div>`;
+    })()}
     <p class="section-title">Regalos (${all.length})</p>
     <div class="admin-list">
   `;
@@ -1282,6 +1487,15 @@ function renderAdmin() {
 
 // --- ACTIONS ---
 function switchView(v) { currentView = v; render(); }
+function setViewMode(mode) { viewMode = mode; localStorage.setItem('viewMode', mode); render(); }
+function setSortMode(mode) { sortMode = mode; localStorage.setItem('sortMode', mode); render(); }
+
+function sortGifts(list) {
+  if (sortMode === 'price-asc') return [...list].sort((a, b) => (a.price || 0) - (b.price || 0));
+  if (sortMode === 'price-desc') return [...list].sort((a, b) => (b.price || 0) - (a.price || 0));
+  if (sortMode === 'alpha') return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+  return list;
+}
 
 function showPinModal() {
   dbAdmin.child("pinHash").once("value", snap => {
