@@ -61,7 +61,7 @@
   .header {
     padding: 48px 20px 36px;
     text-align: center;
-    background: linear-gradient(160deg, var(--primary), var(--primary-dark));
+    background: linear-gradient(160deg, color-mix(in srgb, var(--primary), #fff 15%), var(--primary), var(--primary-dark), color-mix(in srgb, var(--primary-dark), #000 20%));
     color: #fff;
     position: relative;
     overflow: hidden;
@@ -73,7 +73,7 @@
     left: -30%;
     width: 160%;
     height: 200%;
-    background: radial-gradient(ellipse, rgba(255,255,255,0.12) 0%, transparent 65%);
+    background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.25) 0%, transparent 55%);
     pointer-events: none;
   }
   .header .logo {
