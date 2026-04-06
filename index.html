@@ -176,13 +176,30 @@
     box-shadow: 0 3px 10px rgba(124,108,168,0.3);
   }
 
-  /* VIEW TOGGLE */
-  .view-toggle {
+  /* VIEW CONTROLS */
+  .view-controls {
     display: flex;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
     margin-left: 12px;
     padding-left: 12px;
     border-left: 1px solid var(--border);
+  }
+  .sort-select {
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    cursor: pointer;
+    outline: none;
+  }
+  .sort-select:focus { border-color: var(--primary); }
+  .view-toggle {
+    display: flex;
+    gap: 4px;
   }
   .view-btn {
     width: 34px;
@@ -861,6 +878,7 @@ let editingId = null;
 let notifTimer = null;
 let dataLoaded = false;
 let viewMode = localStorage.getItem('viewMode') || 'grid';
+let sortMode = localStorage.getItem('sortMode') || 'default';
 
 // --- HELPERS ---
 async function hashPin(pin) {
@@ -1162,13 +1180,21 @@ function render() {
         \u{1F512} Admin
       </button>
       ${currentView === 'guest' ? `
-      <div class="view-toggle">
-        <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Grilla">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
-        </button>
-        <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')" title="Lista">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
-        </button>
+      <div class="view-controls">
+        <select class="sort-select" onchange="setSortMode(this.value)">
+          <option value="default" ${sortMode === 'default' ? 'selected' : ''}>Orden original</option>
+          <option value="price-asc" ${sortMode === 'price-asc' ? 'selected' : ''}>Precio: menor a mayor</option>
+          <option value="price-desc" ${sortMode === 'price-desc' ? 'selected' : ''}>Precio: mayor a menor</option>
+          <option value="alpha" ${sortMode === 'alpha' ? 'selected' : ''}>A - Z</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn ${viewMode === 'grid' ? 'active' : ''}" onclick="setViewMode('grid')" title="Grilla">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="0" width="7" height="7" rx="1.5"/><rect x="9" y="0" width="7" height="7" rx="1.5"/><rect x="0" y="9" width="7" height="7" rx="1.5"/><rect x="9" y="9" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button class="view-btn ${viewMode === 'list' ? 'active' : ''}" onclick="setViewMode('list')" title="Lista">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="3" rx="1.5"/><rect x="0" y="6.5" width="16" height="3" rx="1.5"/><rect x="0" y="12" width="16" height="3" rx="1.5"/></svg>
+          </button>
+        </div>
       </div>
       ` : ''}
     </div>
@@ -1183,8 +1209,8 @@ function render() {
 }
 
 function renderGuest() {
-  const av = available();
-  const res = reserved();
+  const av = sortGifts(available());
+  const res = sortGifts(reserved());
   if (giftList().length === 0) return '<div class="empty">\u{1F381} Aun no hay regalos en la lista</div>';
 
   let html = "";
@@ -1347,6 +1373,14 @@ function renderAdmin() {
 // --- ACTIONS ---
 function switchView(v) { currentView = v; render(); }
 function setViewMode(mode) { viewMode = mode; localStorage.setItem('viewMode', mode); render(); }
+function setSortMode(mode) { sortMode = mode; localStorage.setItem('sortMode', mode); render(); }
+
+function sortGifts(list) {
+  if (sortMode === 'price-asc') return [...list].sort((a, b) => (a.price || 0) - (b.price || 0));
+  if (sortMode === 'price-desc') return [...list].sort((a, b) => (b.price || 0) - (a.price || 0));
+  if (sortMode === 'alpha') return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+  return list;
+}
 
 function showPinModal() {
   dbAdmin.child("pinHash").once("value", snap => {
