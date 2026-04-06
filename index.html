@@ -354,7 +354,7 @@
   .list-view .card-price { margin: 0; font-size: 14px; }
   .list-view .card-actions { margin-top: 0; }
   .list-view .card-actions .btn { padding: 7px 12px; font-size: 12px; }
-  .list-view .badge { position: static; font-size: 10px; padding: 2px 8px; margin-left: auto; order: 1; }
+  .list-view .badge { display: none; }
 
   .card-reservers-count {
     font-size: 12px;
@@ -1355,7 +1355,7 @@ function renderGuest() {
           ${g.image ? `<img src="${esc(g.image)}" alt="${esc(g.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
           <div class="placeholder" style="${g.image ? 'display:none' : ''}">\u{1F381}</div>
           <div class="card-body">
-            <p class="card-name" title="${esc(g.name)}">${esc(g.name)}</p>
+            <p class="card-name" title="${esc(g.name)}">${esc(g.name)}${g.unlimited ? ' <span style="font-size:11px;color:var(--success);font-weight:700">\u221E</span>' : ''}</p>
             <p class="card-price">${formatPrice(g.price)}${count > 0 ? ` <span class="card-reservers-count" title="${reservers.map(r => typeof r === 'object' ? r.animal : r).join(', ')}">${'\u{1F464}'.repeat(Math.min(count, 5))}${count > 5 ? '+' + (count - 5) : ''}</span>` : ''}</p>
             <div class="card-actions">
               <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo \u{1F64B}</button>
