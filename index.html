@@ -1372,7 +1372,7 @@ function renderGuest() {
             <p class="card-price">${formatPrice(g.price)}${count > 0 ? ` <span class="card-reservers-count" title="${reservers.map(r => typeof r === 'object' ? r.animal : r).join(', ')}">${'\u{1F464}'.repeat(Math.min(count, 5))}${count > 5 ? '+' + (count - 5) : ''}</span>` : ''}</p>
             <div class="card-actions">
               <button class="btn btn-primary" style="flex:1" onclick="showReserveModal('${g.id}')">Lo llevo yo \u{1F64B}</button>
-              ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Ver \u2197</a>` : ''}
+              ${g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener" class="btn btn-secondary" style="flex:0;text-decoration:none;text-align:center;white-space:nowrap">Comprar \u2197</a>` : ''}
             </div>
           </div>
         </div>`;
@@ -1451,13 +1451,16 @@ function renderAdminGifts(all, editing) {
     all.forEach(g => {
       const reservers = g.unlimited && g.reservedByList ? Object.values(g.reservedByList) : [];
       const hasReservers = g.reservedBy || reservers.length > 0;
-      const adminReservers = reservers.map(r => typeof r === 'object' ? `${r.name} (${r.animal})` : r);
+      const reserverAnimals = reservers.map(r => typeof r === 'object' ? r.animal : r).filter(Boolean);
+      const reserverNames = reservers.map(r => typeof r === 'object' ? r.name : r);
       html += `
         <div class="admin-row">
           <div class="info">
             <p>${esc(g.name)}${g.unlimited ? ' <span style="font-size:11px;color:var(--success);font-weight:600">\u221E</span>' : ''}</p>
-            <p>${formatPrice(g.price)}${g.reservedBy && !g.unlimited ? `<span class="reserved-link">\u2192 ${esc(g.reservedBy)}${g.reservedByAnimal ? ' (' + esc(g.reservedByAnimal) + ')' : ''}</span>` : ''}${adminReservers.length > 0 ? `<span class="reserved-link">\u2192 ${adminReservers.map(r => esc(r)).join(', ')}</span>` : ''}</p>
+            <p>${formatPrice(g.price)}${hasReservers ? `<span class="reserved-link">\u2192 ${g.reservedBy && !g.unlimited ? esc(g.reservedByAnimal || '?') : ''}${reserverAnimals.length > 0 ? reserverAnimals.map(a => esc(a)).join(', ') : ''}</span>` : ''}</p>
+            <p class="admin-reveal" id="reveal-${g.id}" style="display:none;font-size:12px;color:var(--text-secondary);margin-top:4px">\u{1F464} ${g.reservedBy && !g.unlimited ? esc(g.reservedBy) : ''}${reserverNames.length > 0 ? reserverNames.map(n => esc(n)).join(' \u00B7 ') : ''}</p>
           </div>
+          ${hasReservers ? `<button class="btn btn-secondary btn-sm" onclick="toggleReveal('${g.id}')" title="Ver quien reservo">\u{1F441}</button>` : ''}
           <button class="btn btn-secondary btn-sm" onclick="startEdit('${g.id}')">Editar</button>
           ${hasReservers ? `<button class="btn btn-warn btn-sm" onclick="unreserve('${g.id}')">Liberar</button>` : ''}
           <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${g.id}')">\u2715</button>
@@ -1792,6 +1795,11 @@ function saveGift() {
     dbGifts.push(data);
     notify("Regalo agregado");
   }
+}
+
+function toggleReveal(id) {
+  const el = document.getElementById('reveal-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function startEdit(id) {
